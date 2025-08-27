@@ -1,0 +1,167 @@
+# Global Firefight - Drone Command Requirements
+
+## System Requirements
+
+### Development Environment
+- Unity 2023.x LTS or later
+- Visual Studio 2022 or Rider IDE
+- .NET Framework 4.7.1 or later
+- Git for version control
+
+### Unity Packages Required
+- Universal Render Pipeline (URP)
+- Cesium for Unity (latest version)
+- Input System (new Unity Input System)
+- TextMeshPro
+- ProBuilder (for rapid prototyping)
+
+## External API Requirements
+
+### NASA APIs
+1. **NASA FIRMS API**
+   - Purpose: Real-time wildfire data
+   - Authentication: NASA Earthdata Login API key
+   - Registration: https://firms.modaps.eosdis.nasa.gov/web-services/
+   - Rate Limits: Standard with API key (avoid DEMO_KEY for production)
+
+2. **NASA EONET API**
+   - Purpose: Major wildfire event tracking
+   - Authentication: None required (public API)
+   - Endpoint: https://eonet.gsfc.nasa.gov/api/v3/events
+
+### Google Cloud Platform
+1. **Google Maps Platform**
+   - Purpose: Photorealistic 3D tiles for tactical view
+   - Authentication: Google Cloud API key
+   - Required Services: Map Tiles API
+   - Billing: Required (pay-per-use)
+   - Setup: https://console.cloud.google.com/
+
+## Target Platform Requirements
+
+### Primary Target (PC)
+- Windows 10/11 or macOS 10.15+
+- DirectX 11 or Metal support
+- 8GB RAM minimum, 16GB recommended
+- Dedicated graphics card (GTX 1060 / RX 580 or better)
+- 2GB VRAM minimum
+- 10GB available storage
+
+### Secondary Target (WebGL)
+- Modern web browser with WebGL 2.0 support
+- Chrome 80+, Firefox 75+, Safari 14+, Edge 80+
+- 4GB RAM minimum
+- Hardware-accelerated graphics
+- Stable internet connection for API calls
+
+## Development Dependencies
+
+### C# Libraries
+- Newtonsoft.Json (for API data parsing)
+- System.Net.Http (for web requests)
+- Unity.Mathematics (for geospatial calculations)
+
+### Asset Store Packages (Optional)
+- Particle systems for fire effects
+- Audio packages for immersive soundscape
+- UI toolkit packages for enhanced interface
+
+## API Rate Limits and Quotas
+
+### NASA FIRMS
+- Standard: 10,000 requests per day
+- Burst: 10 requests per second
+- Data freshness: 3-hour delay for near real-time
+
+### NASA EONET
+- No published rate limits (public API)
+- Recommended: Cache results, update every 6-12 hours
+
+### Google Maps Platform
+- Map Tiles API: $7.00 per 1,000 requests
+- Free tier: $200 monthly credit
+- Rate limit: 30,000 requests per minute
+
+## Performance Targets
+
+### Frame Rate
+- PC Target: 60 FPS @ 1080p, 30 FPS @ 4K
+- WebGL Target: 30 FPS @ 1080p
+
+### Memory Usage
+- PC: Maximum 4GB RAM usage
+- WebGL: Maximum 1GB RAM usage
+- Streaming: Maximum 100MB per tile load
+
+### Network Usage
+- Initial load: <500MB for base assets
+- Ongoing: <10MB per hour for API updates
+- Tile streaming: Variable based on movement
+
+## Security Requirements
+
+### API Key Management
+- Store API keys in Unity's PlayerPrefs or external config
+- Never commit API keys to version control
+- Use environment variables for development
+- Implement key rotation capabilities
+
+### Data Privacy
+- No storage of personal user data
+- Temporary caching of public NASA data only
+- Comply with NASA's data usage policies
+- Attribution requirements for Google data
+
+## Testing Requirements
+
+### Unit Testing
+- Core game logic components
+- API integration modules
+- Geospatial calculation accuracy
+- Data parsing and validation
+
+### Integration Testing
+- End-to-end API data flow
+- UI state transitions
+- Performance under load
+- Cross-platform compatibility
+
+### User Acceptance Testing
+- Gameplay loop validation
+- Intuitive control schemes
+- Clear visual feedback
+- Responsive user interface
+
+## Deployment Requirements
+
+### Version Control
+- Git repository with appropriate .gitignore
+- Semantic versioning (MAJOR.MINOR.PATCH)
+- Tagged releases for milestones
+- Branching strategy for features
+
+### Build Pipeline
+- Automated Unity builds
+- Asset bundle optimization
+- Platform-specific builds
+- Continuous integration setup
+
+### Distribution
+- Standalone executable for PC
+- WebGL build for web deployment
+- Asset hosting for large files
+- CDN for global distribution
+
+## Documentation Requirements
+
+### Code Documentation
+- XML documentation for public APIs
+- README files for major systems
+- Architecture decision records
+- API integration guides
+
+### User Documentation
+- Gameplay tutorial system
+- Control scheme reference
+- System requirements guide
+- Troubleshooting FAQ

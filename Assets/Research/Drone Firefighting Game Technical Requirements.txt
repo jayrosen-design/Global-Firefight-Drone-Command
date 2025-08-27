@@ -1,0 +1,442 @@
+﻿Technical Requirement Document: Global Firefight - Drone Command
+
+
+
+
+1.0 System Architecture and Technology Stack
+
+
+This section defines the high-level technical framework for the "Global Firefight: Drone Command" project. It outlines the core components, their interdependencies, and the flow of data that will drive the simulation. This architecture is designed to support a scalable, data-rich experience that balances global strategic gameplay with detailed, immersive tactical control.
+
+
+1.1 Core Engine and Rendering Pipeline
+
+
+The selection of the core engine and rendering pipeline is foundational to achieving the project's visual and performance goals across its target platforms.
+* Engine: Unity 6.2 LTS. The project will be developed using Unity 6.2 (or the latest Long-Term Support version available). This version provides a stable development environment with access to the latest performance optimizations, URP features, and platform support necessary for the project's scope.1
+* Rendering Pipeline: Universal Render Pipeline (URP). The URP is mandated for this project due to its inherent scalability and performance characteristics. It is optimized to support a wide range of hardware, from high-end PCs to web-based clients via WebGL. This flexibility is critical for a dual-mode game that must render both a vast, global-scale view and detailed, photorealistic 3D scenes. URP's customizable rendering features will allow for tailored visual quality settings, ensuring a smooth frame rate across all gameplay modes and target platforms.1
+* Platform Targets: The primary development and performance target is PC (Windows/macOS). WebGL is designated as a secondary deployment target to maximize accessibility for the hackathon. All architectural and design decisions must consider the performance constraints of the WebGL platform, particularly regarding memory usage, shader complexity, and data streaming.
+
+
+1.2 High-Level Data Flow Architecture
+
+
+The simulation is driven by a continuous flow of data from external services, which is processed and visualized within the Unity engine. The architecture is designed to be modular, allowing for a simplified implementation for the hackathon prototype while providing a clear path for future expansion.
+The data pipeline can be summarized in the following stages:
+1. Data Acquisition: A dedicated service, either running on a backend server or managed client-side for the prototype, will periodically poll the NASA FIRMS and EONET APIs. This service is responsible for fetching the latest active wildfire data globally.
+2. Data Processing & Transformation: Raw data retrieved from the APIs (primarily in CSV and GeoJSON formats) is parsed, cleaned, and transformed into a structured, game-ready format. This involves creating C# objects (e.g., FireIncident class) that encapsulate key attributes such as geographic coordinates, intensity, confidence level, and contextual metadata.
+3. Geospatial Rendering & Visualization: The processed FireIncident objects are passed to a FireDataManager within the Unity scene. This manager interfaces with the Cesium for Unity plugin to instantiate and position visual representations of each fire on the 3D globe using CesiumGlobeAnchor components for precise georeferencing.
+4. Player Interaction & Gameplay Loop: The player interacts with these fire visualizations from the global Real-Time Strategy (RTS) view. They issue commands to drone fleets, which are dispatched to target locations. Player actions, such as deploying fire suppressant, directly affect the state of the corresponding FireIncident objects (e.g., reducing their "health" or "intensity" attributes).
+5. State Update & Scoring: The game state is continuously updated based on fire propagation logic and player interventions. The Scoring System (detailed in Section 6.0) runs in parallel, calculating the monetary value of property and lives saved based on the player's effectiveness and feeding this information back to the UI.
+
+
+1.3 Key Technology Integration Overview
+
+
+The project's success hinges on the seamless integration of three core technologies, each serving a distinct but complementary purpose.
+* NASA FIRMS/Earth Data: This is the primary source of real-world event data. The Fire Information for Resource Management System (FIRMS) provides near real-time active fire locations, which serve as the dynamic "enemy" units in the simulation. This grounds the gameplay in authentic, current global events.3
+* Cesium for Unity: This open-source plugin is the foundational geospatial engine for the project. It provides the high-accuracy, full-scale WGS84 globe rendered directly within the Unity editor and at runtime. It is responsible for streaming 3D geospatial datasets and anchoring all game objects to their correct real-world coordinates.7
+* Google Maps Platform: Accessed via the Cesium plugin, the Google Maps Platform's Map Tiles API will provide the Photorealistic 3D Tiles. This dataset offers unparalleled detail for urban and natural environments, serving as the high-fidelity backdrop for the third-person drone control gameplay mode.10
+The feasibility of this entire project rests upon a crucial technological synergy: the widespread adoption of open standards in the geospatial industry. The architecture is not merely a collection of disparate tools but an integrated system unified by these standards. Google's decision to provide its Photorealistic 3D Tiles using the Open Geospatial Consortium's (OGC) 3D Tiles standard—a standard pioneered by Cesium—is the central enabler.14 This allows the Cesium for Unity plugin to act as a universal renderer. Simultaneously, NASA's commitment to providing data in open, standardized formats like GeoJSON and KML means this data can be readily consumed and visualized by the same Cesium engine.4 Consequently, Cesium functions as the architectural linchpin, a central hub within Unity that ingests event data from NASA and renders it atop a global base map streamed from Google. This interoperability transforms a complex integration challenge into a streamlined, achievable development pipeline.
+
+
+2.0 API Integration and Data Services
+
+
+This section provides detailed specifications for interacting with the required external APIs. It is intended as a practical guide for the developer, outlining authentication, endpoints, request parameters, and expected data structures.
+
+
+2.1 NASA FIRMS API Implementation Guide
+
+
+The FIRMS API is the primary source for real-time fire data and is critical for populating the game world with dynamic events.
+* Authentication: All requests to the FIRMS API services require a unique application key. For the WMS service, this is a MAP_KEY; for text/CSV downloads, it is an Earthdata Login API key. A key can be obtained by registering with NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE).3 While a
+DEMO_KEY is available for initial exploration, its rate limits are insufficient for a functional application and must not be used in the final prototype.19 The API key should be included as a parameter in all HTTP requests.
+* Endpoints for Active Fire Data: The game requires structured data for gameplay logic, not just images. Therefore, the primary endpoint will be the Active Fire Data download service, which provides data in CSV or text file format for the last 24, 48 hours, or 7 days.4 The Web Map Service (WMS) is a viable alternative for a simplified visualization layer but is not recommended as it returns images, making it difficult to extract data for individual fire entities and their properties.18 The recommended approach is to request the 24-hour active fire data in CSV format.
+* Request Parameters and Data Formats:
+   * Source: The request should specify the data source. The Visible Infrared Imaging Radiometer Suite (VIIRS) instrument is preferred over the Moderate Resolution Imaging Spectroradiometer (MODIS) due to its higher spatial resolution (375m vs. 1km), which allows for more precise fire locations in-game.4
+   * Area/Date: Requests should be made for the entire world for the last 24 hours to populate the global RTS view.
+   * Data Fields: The returned CSV file will contain multiple columns. The following are critical for the simulation:
+   * latitude, longitude: The WGS84 coordinates of the fire hotspot. Essential for placement.
+   * acq_date, acq_time: The date and time of data acquisition. Used for timestamping and tracking fire duration.
+   * confidence: A value (0-100) indicating the detection confidence. This will be used to determine the initial "health" or size of the fire in-game.
+   * frp: Fire Radiative Power, measured in megawatts (MW). This is a direct measure of the fire's energy output and is the most important field for gameplay. It will be used to determine the fire's "intensity," which will govern its spread rate and the damage it inflicts.
+   * Rate Limiting and Data Refresh Strategy: To ensure responsible API usage and avoid being rate-limited, the game must implement a robust data management strategy. The WMS data, for example, is updated approximately every 15 minutes.18 A client-side application should not poll the API more frequently than this. For the hackathon prototype, the client can fetch the global fire data directly upon startup and then on a timer (e.g., every 30 minutes). In a production environment, this task would be offloaded to a backend server that caches the results and serves them to all connected clients, minimizing direct calls to the NASA API.
+
+
+2.2 NASA EONET API for Contextual Events
+
+
+While FIRMS provides raw hotspot data, the Earth Observatory Natural Event Tracker (EONET) API offers curated, human-readable information about significant environmental events. Integrating EONET is highly recommended to add narrative depth and strategic focus to the gameplay.
+   * Purpose: EONET can be used to identify major, named wildfire events, distinguishing them from the thousands of smaller hotspots detected by FIRMS. This allows for the creation of high-priority "missions" with unique objectives and higher score rewards.
+   * Endpoint: The primary endpoint is https://eonet.gsfc.nasa.gov/api/v3/events.16
+   * Filtering: The request must be filtered to retrieve only relevant events. This is achieved using URL query parameters: ?category=wildfires&status=open. This ensures the API returns only active wildfires, ignoring closed events or other natural disasters.16
+   * Data Structure: The API returns data in GeoJSON format, which is easily parsed in C# using libraries like Newtonsoft.Json. The key fields within each event object are:
+   * title: The human-readable name of the event (e.g., "Pickett Fire"). This can be displayed in the UI.
+   * link: A URL to the NASA Earth Observatory article about the event, which can be linked in a UI panel for players seeking more information.
+   * geometry: A GeoJSON object containing the coordinates of the event, typically as a Point or Polygon. These coordinates are used to place a unique mission icon on the globe.
+The fusion of these two NASA data sources is key to creating a compelling gameplay loop. The system can be designed to have two distinct tiers of fire events. The base layer consists of thousands of procedurally handled "hotspots" generated from the raw FIRMS data feed. These represent the general, ongoing fire activity across the globe. Layered on top are a smaller number of high-profile, named "Wildfire Crises" generated from the EONET feed. When a player engages with a fire whose coordinates fall within the geometry of an EONET event, the UI could display the event's title and offer bonus objectives. This transforms the experience from a generic data visualization into a strategic game of prioritizing major, named crises while managing the background "noise" of smaller fires.
+
+
+2.3 Google Maps Platform API Suite
+
+
+The Google Maps Platform provides the high-fidelity visual layer for close-up, tactical gameplay.
+   * Service: The project will utilize the Map Tiles API, specifically the Photorealistic 3D Tiles product. This service streams a 3D mesh model of the real world, derived from the same source as Google Earth.10
+   * API Key and Billing: Use of this API requires a Google Cloud project with billing enabled. An API key must be generated from the Google Cloud Console and the Map Tiles API must be explicitly enabled for that project.22 The platform operates on a pay-as-you-go model. However, it includes a significant monthly free usage tier which should be more than sufficient for the development and demonstration purposes of a hackathon project.12
+   * Terms of Service and Attribution: The use of Google's map data is subject to strict terms of service. A critical and non-negotiable requirement is the display of data attributions on screen. The Cesium for Unity plugin is designed to handle this automatically. The Cesium3DTileset component in Unity has a boolean property named Show Credits On Screen, which must be enabled (true). Failure to display these attributions constitutes a violation of the Google Maps Platform Terms of Service and could result in API access being revoked.12
+
+
+3.0 Geospatial Rendering and World Simulation
+
+
+This section details the technical implementation of the 3D world environment within Unity. It covers the setup of the Cesium plugin, the integration of Google's high-detail map tiles, and the methods for visualizing the dynamic fire data fetched from the NASA APIs.
+
+
+3.1 Cesium for Unity Engine Integration
+
+
+The Cesium for Unity plugin is the core component that transforms the standard Unity engine into a high-fidelity geospatial visualization tool.
+   * Package Installation: The plugin is not available on the standard Unity Asset Store. It must be installed via the Unity Package Manager using a scoped registry. The following settings must be added to the project's Package Manager configuration 8:
+   * Name: Cesium
+   * URL: https://unity.pkg.cesium.com
+   * Scope(s): com.cesium.unity
+   * Scene Setup: A new scene must be configured for geospatial rendering. This involves adding several key objects from the Cesium package:
+   * CesiumGeoreference: This is the most crucial object. It establishes the relationship between Unity's world space coordinates (X, Y, Z) and the Earth's geodetic coordinates (longitude, latitude, height). The origin of the Unity scene is effectively "pinned" to a specific point on the globe defined by this object's properties.8
+   * Cesium3DTileset: This object is responsible for streaming geospatial data into the scene. The project will use at least two of these: one for a low-detail global base map and another for the high-detail Google Photorealistic 3D Tiles.
+   * Cesium World Terrain + Bing Maps Aerial Imagery: This is a default tileset provided by Cesium that can be added to quickly establish a baseline globe with terrain and imagery.8
+   * Camera Configuration: The default Unity Main Camera is unsuitable for navigating a full-scale planet. It must be deleted and replaced with the CesiumDynamicCamera prefab provided in the Cesium package. This camera controller includes logic for handling the vast changes in scale and precision required to move smoothly from an orbital view down to street level, adjusting its clipping planes and movement speed dynamically.8
+
+
+3.2 Implementing Google Photorealistic 3D Tiles
+
+
+To achieve the highest level of visual fidelity for the third-person drone view, the project will integrate Google's Photorealistic 3D Tiles.
+   * Connection via Cesium ion: The most straightforward method of integration is to use a free Cesium ion account. After installing the Cesium for Unity package, a "Cesium" window will be available in the Unity editor. This window allows the developer to connect the project to their Cesium ion account. Once connected, "Google Photorealistic 3D Tiles" can be added to the scene from the "Quick Add" panel. This method handles token management and asset configuration automatically.8
+   * Direct URL Connection (Alternative): For developers who prefer not to use Cesium ion, a direct connection is possible. This involves creating a new, empty Cesium3DTileset game object in the scene. In its Inspector panel, the Source property should be changed from "From Cesium Ion" to "From URL". The URL field must then be set to the Google Map Tiles API endpoint, including the developer's API key: https://tile.googleapis.com/v1/3dtiles/root.json?key=YOUR_API_KEY.12
+   * Attribution Requirement: As stated in Section 2.3, displaying Google's data attribution is mandatory. The Show Credits On Screen checkbox on the Cesium3DTileset component that is loading the Google data must be checked true. This will render the required copyright and data source information at the bottom of the game screen.13
+
+
+3.3 Visualizing Fire Data on the Globe
+
+
+The raw fire data from NASA must be translated into visual elements within the game world.
+   * Data-to-Object Pipeline: A central C# script, tentatively named FireDataManager, will be responsible for managing the lifecycle of fire objects. It will parse the list of FireIncident objects created from the NASA data and, for each incident, instantiate a fire prefab.
+   * Georeferencing Prefabs: A standard Unity Transform component is insufficient for placing objects on a spherical, streaming globe. Each fire prefab must have a CesiumGlobeAnchor component attached. This component will be programmatically updated with the latitude and longitude from the fire data. The CesiumGlobeAnchor ensures that the prefab remains precisely fixed to its real-world location on the Earth's surface, regardless of camera movement or changes in the underlying map tile's level of detail.9
+   * Visual Effects (VFX): The fire prefab will be a composite of several elements to provide clear visual feedback to the player. It should contain a particle system to render smoke, flames, and embers, as well as a point light to cast dynamic light on the surrounding 3D environment. The properties of these components will be data-driven. For instance, the startSize and emissionRate of the particle system, along with the intensity of the light, will be directly proportional to the frp (Fire Radiative Power) value associated with that fire incident. This creates an immediate, intuitive visual language: more intense fires will appear larger, smokier, and brighter.
+A significant performance challenge lies in rendering thousands of global fires while simultaneously streaming high-resolution 3D tiles. A naive approach would cripple performance, especially on WebGL. The solution is a multi-tiered Level of Detail (LOD) system that applies to both the map data and the fire visualizations. The visibility and complexity of game objects must be tied to the camera's altitude.
+   * LOD Tier 1 (Global View): When the camera is at a high altitude (orbital view), the Cesium3DTileset for Google's photorealistic data is disabled. A low-resolution base imagery layer, such as the default Bing Maps Aerial layer, is used instead.8 At this distance, individual fire prefabs with complex particle systems are also disabled. Instead, the
+FireDataManager should render the fires as a single, optimized point cloud or as simple, unlit, camera-facing quads with an emissive texture. This provides global situational awareness with minimal performance cost.
+   * LOD Tier 2 (Regional View): As the player zooms into a specific continent or region, the fire visualizations within the camera's view frustum transition from simple quads to the full-featured fire prefabs, complete with particle effects and lighting managed by the CesiumGlobeAnchor. The base map remains the low-resolution layer to maintain smooth panning and zooming.
+   * LOD Tier 3 (Tactical/Drone View): When the player transitions to the third-person drone view, the system performs a tile-set swap. The low-detail base map tileset is disabled, and the high-detail Cesium3DTileset for Google Photorealistic 3D Tiles is enabled. This ensures that the maximum level of detail is only loaded and rendered when it is directly in the player's view, conserving memory, bandwidth, and rendering power. This tiered approach is fundamental to making the dual-mode gameplay technically viable.
+
+
+4.0 Drone Fleet and Asset Specifications
+
+
+This section provides a comprehensive design guide for the in-game drone units. It is based on research into authentic unmanned aerial systems (UAS) used by prominent national and international firefighting and defense agencies. This data serves as a blueprint for 3D modeling, texturing, and defining the gameplay characteristics of each unit. By consolidating this information, the development process is streamlined, ensuring a high degree of authenticity and providing a solid foundation for gameplay balancing.
+
+
+Table 4.1: Drone Unit Specifications
+
+
+The following table details the specifications for each drone unit available to the player. The "Payload Capacity" is represented in abstract "Suppressant Units" for gameplay balancing, where one unit might equate to a specific volume or weight of retardant. "Flight Endurance" is provided in real-world seconds.
+
+
+Country
+	Agency/Force
+	Model Name
+	In-Game Type
+	Payload Capacity (Suppressant Units)
+	Flight Endurance (Seconds)
+	Special Abilities
+	Color Scheme / Livery
+	Source Snippets
+	USA
+	USFS / CAL FIRE
+	DJI Matrice 350 RTK
+	Reconnaissance
+	0
+	3300
+	Thermal Imaging: Can see heat signatures through smoke. PinPoint: Allows player to mark high-value targets for other units.
+	Standard white/grey DJI body. Will feature interchangeable liveries with the US Forest Service shield or CAL FIRE text and logos.
+	23
+	USA
+	CAL FIRE
+	General Atomics MQ-9A Reaper
+	High-Altitude Surveillance
+	0
+	97200
+	Long-Range Thermal: Provides a persistent, wide-area thermal view from high altitude. Wide Area Scan: Can reveal all fire hotspots in a large radius.
+	Standard military light grey. Markings for the California Air National Guard.
+	25
+	USA
+	USFS / CAL FIRE
+	Drone Amplified IGNIS 2 (on Matrice 600)
+	Aerial Ignition
+	400 "Dragon Eggs"
+	1200
+	Prescribed Burn: Deploys incendiary spheres to create controlled backburns and firebreaks. A high-skill, high-reward ability.
+	Standard black DJI M600 body with the distinctive orange and black IGNIS 2 payload system attached underneath.
+	26
+	Canada
+	BC Wildfire Service
+	Fireswarm Thunder Wasp
+	Heavy-Lift Suppression
+	400
+	7200
+	Swarm Capable: A single pilot can command a group of 3 drones to perform coordinated, autonomous water drops. Heavy Lift: Can carry a large volume of suppressant.
+	White and grey body with prominent "FireSwarm" branding. Canadian flag and BC Wildfire Service insignia.
+	28
+	Australia
+	NSW RFS
+	DJI Mavic 3 Thermal
+	Fast Reconnaissance
+	0
+	2700
+	Thermal Imaging: Can see heat signatures through smoke. Rapid Deploy: Very fast and maneuverable, ideal for scouting new fire outbreaks.
+	Standard dark grey DJI body with "NSW RFS" text and the agency's red and white logo.
+	30
+	Brazil
+	CBMGO / Xmobots
+	Nauru 500C ISR
+	Long-Range Surveillance
+	0
+	14400
+	VTOL: Can take off and land vertically without a runway. Long-Range Detection: Can detect new fire outbreaks from up to 30km away.
+	Primarily white fixed-wing body with red and black accent stripes. Features logos for Xmobots and the Corpo de Bombeiros Militar do Estado de Goiás (CBMGO).
+	32
+	China
+	EHang
+	EHang 216F
+	Urban High-Rise Suppression
+	100 (Foam) + 6 (Projectiles)
+	1260
+	High-Pressure Nozzle: Sprays fire-suppressant foam. Extinguisher Projectiles: Fires window-breaking projectiles followed by dry powder. Specialized for structural fires.
+	White passenger-style AAV body with bold red accents and "Firefighting" text in both English and Mandarin.
+	34
+	
+
+5.0 Core Gameplay Systems and Mechanics
+
+
+This section translates the real-world concepts of wildfire management into concrete game mechanics. It defines the player's interaction with the world, the rules of the simulation, and the strategic choices available to them.
+
+
+5.1 Dual-Mode Camera and Control Scheme
+
+
+The game's core experience is defined by the ability to switch between a high-level strategic view and a low-level tactical view.
+      * Global RTS View: This is the primary mode for strategic management.
+      * Controls: The control scheme will adhere to established RTS conventions to ensure intuitive operation. The mouse will be used for camera movement (right-click and drag to rotate, middle-mouse drag to pan, scroll wheel to zoom), unit selection (left-click), and issuing commands (right-click).36
+      * UI: The user interface will feature a classic layout with a minimap, selected unit information panel, and a command card (displaying available actions) located in the bottom corners or across the bottom of the screen. A top bar will display the player's real-time score and total suppression costs.37
+      * Third-Person Drone View: This mode provides an immersive, direct-control experience for a single drone.
+      * Controls: The controls will shift to a familiar third-person action scheme. The WASD keys will control the drone's horizontal movement (forward, backward, strafe left/right), while the mouse will control camera orientation and aiming. Additional keys will be mapped for altitude control (e.g., Spacebar for up, Ctrl for down) and payload deployment (e.g., Left Mouse Button).39
+      * UI: The HUD in this mode will be minimalistic to maximize immersion and visibility. It will consist of non-intrusive widgets displaying critical information: a central targeting reticle, drone status indicators (altitude, speed, battery life), and a clear display of the selected payload type and remaining quantity.41
+      * Seamless Transition Logic: The transition between these two modes must be fluid and intuitive. From the RTS view, the player can select a drone unit and press a dedicated key (e.g., 'T' for Tactical View). This will trigger a smooth camera interpolation from the current RTS camera position to the third-person follow-camera behind the selected drone. To return to the strategic view, the player can press another key (e.g., 'Escape' or 'T' again), which will smoothly transition the camera back to its previous RTS position and orientation, allowing the player to immediately resume strategic command.42
+
+
+5.2 Drone Deployment and Logistics
+
+
+Drone fleets are not infinite resources. Their deployment and management form a core logistical challenge for the player.
+      * Unit Composition: Drones are deployed in cohesive "UAS Modules" or "Teams" rather than being spawned individually. A typical module consists of a ground-based command vehicle and a small, complementary set of 2-4 drones (e.g., one reconnaissance drone and two suppression drones).45 The player's primary deployment action is to place these command vehicles on the map.
+      * Carrier/Command Vehicle: This ground unit is the logistical heart of a drone fleet. It serves as the launch, recovery, and servicing station for its assigned drones. Drones have finite battery life and payload capacity and must physically return to their carrier vehicle to recharge and reload suppressants. This mechanic introduces a crucial "supply line" element to the gameplay, forcing players to make strategic decisions about carrier placement to optimize drone turnaround times and protect the valuable command vehicle.
+      * Swarm Logic: Certain advanced drone units, such as the Canadian "Thunder Wasp," will possess a unique "Swarm" ability. When this ability is activated for a group of compatible drones, a single command from the player will be executed by the entire group in a coordinated, autonomous fashion. For example, a single "drop water" command could result in three drones executing a synchronized, patterned drop for maximum area coverage.29 This offers superior efficiency for large-scale suppression tasks but relinquishes direct, granular control of each individual drone to the AI.
+
+
+5.3 Fire Suppression Mechanics
+
+
+The interaction between fire and suppressants is the central conflict mechanic of the game.
+      * Fire Propagation Model: Fires will be simulated using a simplified grid or node-based system. Each fire entity will have two primary attributes derived from the NASA FIRMS data:
+      * Health: An initial value determined by the confidence field. This represents the total energy needed to extinguish the fire.
+      * Intensity: A value derived from the frp field. This determines the rate at which the fire's "Health" regenerates and the speed at which it spreads to adjacent grid cells or nodes.
+      * Application and Effects of Suppressant Types: The type of suppressant used is a critical strategic choice, as different agents have different effects and are suited for different tactics.
+
+
+Suppressant Type
+	Primary Chemical Composition
+	In-Game Application Method
+	Gameplay Effect
+	Source Snippets
+	Long-Term Retardant
+	Ammonium Phosphate / Ammonium Sulfate (e.g., Phos-Chek)
+	Indirect Attack: Dropped on unburned fuel ahead of the fire front.
+	Creates a chemical firebreak. Vegetation coated with retardant becomes temporarily non-flammable, stopping the fire's spread. Has minimal effect when dropped directly on active flames.
+	50
+	Class A Foam / Water Enhancer
+	Surfactants, Wetting Agents (e.g., FireFoam)
+	Direct Attack: Dropped directly onto active flames.
+	Deals direct "damage" to the fire's Health by cooling and smothering it. Effect is temporary; does not prevent reignition once the foam dissipates.
+	52
+	Aerial Ignition Spheres
+	Potassium Permanganate, Glycol ("Dragon Eggs")
+	Advanced Tactic (Backburn): Deployed on unburned fuel to intentionally start a controlled fire.
+	Creates a controlled burn that moves towards the main wildfire, consuming all available fuel in its path to form a very large, permanent firebreak. High-risk, high-reward.
+	26
+	The strategic depth of the game emerges from the interplay of these constraints. The simulation is not a test of reflexes or "actions per minute," but rather a challenge of foresight and resource management. The core gameplay loop requires the player to make continuous, consequential decisions. They must use fast reconnaissance drones to gather intelligence on a fire's intensity and predicted path. Based on this intelligence, they must choose the correct tool for the job: an indirect attack with expensive retardant to cut off a large but slow-moving fire, or a rapid direct attack with cheaper foam to save a structure immediately threatened by a small flare-up. All of these tactical decisions are governed by the overarching logistical puzzle of managing drone battery life, payload replenishment, and the strategic positioning of their mobile command vehicles.
+
+
+6.0 Scoring System: Economic Impact Model
+
+
+The scoring system is designed to be a core element of the gameplay, reflecting the game's theme by quantifying the player's success in terms of the real-world economic value of their actions. This model is based on methodologies used by agencies like FEMA and in economic studies on the impact of wildfires.
+
+
+6.1 Calculating Value of Property Saved
+
+
+      * Pre-Incident Property Value: When a fire incident is generated in or near a populated area (as determined by underlying map data), the game will procedurally assign a pre-incident property value to the affected area. This calculation will be a simplified version of the International Code Council's Building Valuation Data (BVD) formula.57 The formula will be:
+
+$$ \text{PropertyValue} = \text{AreaSquareMeters} \times \text{BuildingDensityFactor} \times \text{BaseCostPerMeter} $$
+Where BuildingDensityFactor is a multiplier based on the type of area (e.g., rural, suburban, urban).
+      * Damage Assessment Algorithm: Property located within the fire's area of effect will sustain damage over time. The rate of value loss will be proportional to the fire's Intensity (derived from frp). The total value lost is tracked for each affected property block. When a player successfully extinguishes a fire threatening a property block, the value saved is calculated as:
+
+ValueSaved=InitialPropertyValue−ValueLost
+      * Timber and Ecosystem Services Value: For fires located in national forests or significant wilderness areas, a value will be assigned based on the affected acreage. This represents the economic loss of timber resources and a simplified valuation of ecosystem services.59 The formula will be:
+ResourceValue=Acreage×ConstantValuePerAcre
+
+This value degrades as the fire burns. Successfully extinguishing the fire saves the remaining resource value, which is added to the player's score.
+      * Suppression Cost Deduction: To create a meaningful strategic challenge, the player's actions will incur costs that are deducted from their total score. Each drone deployed, each flight minute, and each payload of suppressant dropped will have an associated monetary cost, reflecting real-world wildfire suppression expenditures.62 This forces the player to consider the cost-effectiveness of their actions.
+
+
+6.2 Calculating Value of Lives Saved
+
+
+Directly simulating and scoring individual lives lost is a sensitive and potentially grim mechanic. Instead, the game will abstract this concept using a model based on the Value of a Statistical Life (VSL), a standard metric used by the EPA and other agencies for cost-benefit analysis of policies that reduce mortality risk.59
+         * Population at Risk: Populated areas on the map will have an associated conceptual "population" value.
+         * Risk Model: When a fire's predicted path (based on its intensity and simulated wind direction) intersects with a populated area, a "Population at Risk" alert is triggered in the UI. If the player fails to contain the fire within a set time limit, the population is considered "un-saved."
+         * VSL Application: For each populated area that was under a "Population at Risk" alert that the player successfully saves (by extinguishing the threatening fire), a large, fixed score bonus is awarded. This "Lives Saved Bonus" represents the successful mitigation of a catastrophic risk and serves as a powerful incentive for prioritizing the protection of communities.
+
+
+6.3 Final Score Calculation and Player Feedback
+
+
+The player's final score is a net calculation reflecting their overall effectiveness as a resource manager.
+         * Formula:
+$$ \text{FinalScore} = (\sum \text{PropertyValueSaved} + \sum \text{ResourceValueSaved} + \sum \text{LivesSavedBonus}) - \text{TotalSuppressionCost} $$
+         * Feedback Mechanism: The end-of-mission screen is a critical feedback tool. It will not just show a final number but will provide a detailed breakdown of the score calculation. This includes a ledger of all assets saved and their values, bonuses awarded for protecting populations, and an itemized list of suppression costs. This reinforces the game's core themes and allows players to analyze their strategic decisions.
+This economic model is the central driver of strategic decision-making. It moves the gameplay beyond a simple action-oriented task. By incorporating suppression costs, the system forces players into a constant cost-benefit analysis. A large, remote fire in a low-value timber area might be a lower priority than a small, but rapidly spreading, fire approaching a suburban development. A player might have to make the difficult choice to sacrifice a block of low-value property to redeploy resources to protect a hospital, where the "Lives Saved Bonus" is immense. The score, therefore, becomes a direct reflection of the player's ability to allocate limited resources for maximum humanitarian and economic impact, mirroring the complex decisions faced by real-world incident commanders.
+
+
+7.0 User Interface (UI) and Experience (UX) Design Recommendations
+
+
+The UI/UX design must effectively bridge the game's two distinct modes of play, managing a high density of information in the strategic view while maintaining immersion in the tactical view. The design philosophy should prioritize clarity, accessibility, and minimizing cognitive load.
+
+
+7.1 RTS View HUD Design
+
+
+The RTS view is the player's command center, where all strategic decisions are made. The UI must present a comprehensive overview of the global situation without being overwhelming.
+            * Layout: A classic bottom-bar layout is recommended for its familiarity and efficiency in the RTS genre.37 This bar will contain the three most critical interactive elements:
+            * Minimap: Located in a corner (typically bottom-right), displaying a simplified 2D projection of the globe. It will show fire locations (color-coded by intensity), player unit locations, and alerts for new, high-priority EONET events.
+            * Selected Unit Information: A panel displaying the icon, health, status, and payload of the currently selected drone or command vehicle.
+            * Command Card: A grid of buttons representing the actions available to the selected unit (e.g., Move, Patrol, Deploy Suppressant, Return to Base).
+            * Resource Display: Key performance indicators should be persistently visible but unobtrusive. A clean, top-bar display is ideal for showing the real-time FinalScore calculation and the TotalSuppressionCost.37
+            * Information Clarity: The UI must be designed for at-a-glance readability. Complex data should be represented visually through icons, color-coding, and progress bars. Detailed statistics and descriptions should be available via tooltips that appear on mouse hover, preventing the main screen from becoming cluttered with text.36
+
+
+7.2 Third-Person Drone View HUD Design
+
+
+The third-person view is focused on immersion and precise execution of tactical tasks. The HUD must provide necessary information without obstructing the player's view of the action.
+            * Minimalism: A "widget-based" or "cockpit HUD" approach is most suitable. Information should be presented in discrete elements anchored to the corners or edges of the screen, leaving the center clear.38
+            * Core Elements:
+            * Targeting Reticle: A dynamic reticle at the center of the screen for aiming suppressant drops. It could change color or shape to indicate optimal drop altitude or when a target is in range.
+            * Drone Status Widget: A compact display showing critical flight information: altitude, airspeed, and a graphical indicator for remaining battery life/flight endurance.
+            * Payload Indicator Widget: A clear iconic representation of the currently selected suppressant type and the remaining quantity.
+            * Contextual Indicators: A small icon or text overlay to indicate when special systems like thermal imaging are active.
+The primary design challenge is managing the cognitive shift as the player transitions between the global strategic context and the local tactical context. A player focused on a single drone in third-person view is blind to new threats emerging elsewhere on the globe. To mitigate this, the UI should provide a persistent link to the strategic overview. A "picture-in-picture" element displaying a small, semi-transparent version of the RTS minimap could be rendered in a corner of the screen during third-person gameplay. This view would provide critical macro-level alerts—such as a new EONET-level fire outbreak or an attack on a command vehicle—without forcing the player to completely exit their tactical view. This allows the player to complete their current maneuver while being notified that a new strategic decision is required, thus smoothing the cognitive transition between the two gameplay modes and creating a more seamless and effective command experience.
+
+
+7.3 Data Visualization and Post-Mission Analytics
+
+
+To enhance player learning and engagement, a post-mission analytics dashboard should provide a detailed summary of their performance. This transforms gameplay from a series of discrete events into a performance that can be reviewed and improved upon.67
+            * Post-Mission Dashboard: Upon completion of a scenario or a timed session, the player will be presented with a dedicated analytics screen.
+            * Key Visualizations:
+            * Score Breakdown: A detailed bar or pie chart illustrating the composition of the final score: points gained from saving property (broken down by type), resources, and the lives-saved bonus, contrasted with the total suppression costs.
+            * Fire Suppression Timeline: A line graph plotting the number of active fires and total burning acreage over the duration of the mission. The downward slope of the line provides a clear visual representation of the player's impact.
+            * Resource Deployment Heatmap: A replay of the mission on the 3D globe showing a heatmap of where the player's resources were most concentrated. This allows players to visually analyze their own strategic tendencies, identify areas of neglect, and refine their deployment strategies for future sessions.67
+
+
+8.0 Conclusion
+
+
+This Technical Requirement Document provides a comprehensive architectural and design blueprint for the "Global Firefight: Drone Command" simulation game. The project's viability is built upon three core pillars: a robust and flexible system architecture, data-driven gameplay mechanics grounded in authenticity, and a meaningful scoring system that reflects real-world economic and humanitarian priorities.
+The architectural foundation relies on the powerful synergy between open geospatial standards, enabling the integration of NASA's real-time fire data and Google's Photorealistic 3D Tiles within the Unity engine, with Cesium for Unity acting as the central rendering and georeferencing hub. This technical approach is not only feasible but also provides a scalable framework for a visually compelling and data-rich world simulation.
+The gameplay mechanics are designed to create a deep strategic experience derived from real-world constraints. By focusing on logistics, diverse suppressant types with distinct tactical applications, and authentic drone capabilities, the game challenges the player's decision-making and resource management skills rather than mere reflexes.
+Finally, the economic impact model for scoring elevates the simulation beyond a simple objective-based game. By tasking the player with maximizing the monetary value of assets and lives saved while minimizing operational costs, the scoring system becomes the primary driver for complex strategic choices, mirroring the high-stakes decisions of actual wildfire incident commanders.
+By adhering to the specifications outlined in this document, the development of a sophisticated and engaging prototype for the NDIA Hackathon 2025 is a well-defined and achievable objective. This document provides the necessary technical and design clarity to translate a compelling concept into a functional and impactful simulation.
+Works cited
+            1. URP 3D Sample - Unity, accessed August 23, 2025, https://unity.com/demos/urp-3d-sample
+            2. Understanding URP settings and essentials - Unity - YouTube, accessed August 23, 2025, https://www.youtube.com/watch?v=HCXCmHgV7Sk
+            3. NASA | LANCE | FIRMS - NASA Firms, accessed August 23, 2025, https://firms.modaps.eosdis.nasa.gov/api/
+            4. Active Fire Data - NASA | LANCE | FIRMS, accessed August 23, 2025, https://firms.modaps.eosdis.nasa.gov/active_fire/
+            5. FIRMS | NASA Earthdata, accessed August 23, 2025, https://www.earthdata.nasa.gov/data/tools/firms
+            6. Earthdata Login APIs, accessed August 23, 2025, https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/earthdata-login-api
+            7. Cesium for Unity – Cesium, accessed August 23, 2025, https://cesium.com/learn/unity/
+            8. Cesium for Unity Quickstart, accessed August 23, 2025, https://cesium.com/learn/unity/unity-quickstart/
+            9. CesiumGS/cesium-unity: Bringing the 3D geospatial ecosystem to Unity - GitHub, accessed August 23, 2025, https://github.com/CesiumGS/cesium-unity
+            10. Google Maps Platform Documentation, accessed August 23, 2025, https://developers.google.com/maps/documentation
+            11. Google Maps Platform - 3D Mapping & Geospatial Analytics, accessed August 23, 2025, https://mapsplatform.google.com/
+            12. Work with a 3D Tiles renderer | Google Maps Tile API | Google for ..., accessed August 23, 2025, https://developers.google.com/maps/documentation/tile/use-renderer
+            13. Cesium for Unity: Photorealistic 3D Tiles from Google Maps Platform, accessed August 23, 2025, https://cesium.com/learn/unity/unity-photorealistic-3d-tiles/
+            14. Cesium Partners with Google Maps Platform to Render Its New Photorealistic 3D Tiles, accessed August 23, 2025, https://cesium.com/blog/2023/05/10/cesium-partners-with-google-maps-platform/
+            15. Cesium partners with Google Maps Platform .. - LiDAR News, accessed August 23, 2025, https://lidarnews.com/press-releases/cesium-partners-with-google-maps-platform/
+            16. API Documentation | Earth Observatory Natural Event Tracker (EONET) - NASA, accessed August 23, 2025, https://eonet.gsfc.nasa.gov/docs/v3
+            17. NASA | LANCE | FIRMS, accessed August 23, 2025, https://firms.modaps.eosdis.nasa.gov/
+            18. Web Services - WMS - NASA | LANCE | FIRMS, accessed August 23, 2025, https://firms.modaps.eosdis.nasa.gov/mapserver/wms-info/
+            19. NASA Open APIs, accessed August 23, 2025, https://api.nasa.gov/
+            20. Archive Download - NASA | LANCE | FIRMS, accessed August 23, 2025, https://firms.modaps.eosdis.nasa.gov/download/
+            21. Fire Information for Resource Management System - Wikipedia, accessed August 23, 2025, https://en.wikipedia.org/wiki/Fire_Information_for_Resource_Management_System
+            22. Getting started with Google Maps Platform, accessed August 23, 2025, https://developers.google.com/maps/get-started
+            23. Unmanned Aircraft Systems (UAS) | US Forest Service, accessed August 23, 2025, https://www.fs.usda.gov/managing-land/fire/aviation/uas
+            24. Drones in Firefighting - The Essential Features You Need - Dronefly, accessed August 23, 2025, https://www.dronefly.com/blogs/news/drones-in-firefighting-the-essential-features-you-need
+            25. What's Flying Above California's Wildfires? The Drone Revolution Explained - Dronelife, accessed August 23, 2025, https://dronelife.com/2025/07/14/whats-flying-above-californias-wildfires-the-drone-revolution-explained/
+            26. Drones in wildfire management - Wikipedia, accessed August 23, 2025, https://en.wikipedia.org/wiki/Drones_in_wildfire_management
+            27. IGNIS Aerial Ignition - Drone Amplified, accessed August 23, 2025, https://droneamplified.com/ignis-aerial-ignition/
+            28. Wildland firefighting drones are being tested in B.C. | CBC News, accessed August 23, 2025, https://www.cbc.ca/news/canada/british-columbia/wildland-firefighting-drones-are-being-tested-in-b-c-1.7520696
+            29. Fireswarm Solutions, accessed August 23, 2025, https://www.fireswarmsolutions.com/
+            30. It's science, not fiction: high-tech drones may soon be fighting bushfires in Australia, accessed August 23, 2025, https://www.preventionweb.net/news/its-science-not-fiction-high-tech-drones-may-soon-be-fighting-bushfires-australia
+            31. Fire and Rescue NSW introduces drone capabilities to the Shoalhaven - Berry, accessed August 23, 2025, https://www.fire.nsw.gov.au/incident.php?record=rec1i9ipjfeZp8dkO
+            32. Agro loses R$ 14 billion - drone speeds up firefighting, accessed August 23, 2025, https://xmobots.com.br/en/agro-perde-r-14-bi-drone-acelera-combate-a-incendios/
+            33. Across Brazil: Drone as New Firefighter in Wildfires Control​ - XAG, accessed August 23, 2025, https://www.xa.com/en/news/application/193
+            34. Smart City Management - EHang 216F, accessed August 23, 2025, https://www.ehang.com/ehang216f/
+            35. EHang AAVs Completes High-Rise Fire Rescue Drill in Laixi City, Qingdao, China, accessed August 23, 2025, https://www.ehang.com/video/show/402.html
+            36. Mastering the Art of Strategy Game Design - RetroStyle Games, accessed August 23, 2025, https://retrostylegames.com/blog/mastering-the-art-of-strategy-game-design/
+            37. RTS UI Design Deep Dive : r/FrostGiant - Reddit, accessed August 23, 2025, https://www.reddit.com/r/FrostGiant/comments/mi6bct/rts_ui_design_deep_dive/
+            38. Strategy Game Battle UI. I was doing research on trends in the… | by treeform | Medium, accessed August 23, 2025, https://medium.com/@treeform/strategy-game-battle-ui-3b313ffd3769
+            39. Controls & Movement - Tabletop Simulator Knowledge Base, accessed August 23, 2025, https://kb.tabletopsimulator.com/player-guides/basic-controls/
+            40. Control the camera! - Construction Simulator! (PS/Xbox/PC) - YouTube, accessed August 23, 2025, https://www.youtube.com/watch?v=1mumjgLEbqU
+            41. Game UI design: the mechanics of fun experiences - Justinmind, accessed August 23, 2025, https://www.justinmind.com/ui-design/game
+            42. Switching between RTS Camera and Third-Person Camera - Unreal Engine Forums, accessed August 23, 2025, https://forums.unrealengine.com/t/switching-between-rts-camera-and-third-person-camera/328854
+            43. How to Switch Between First and Third Person Cameras – Unreal Engine 5 Tutorial, accessed August 23, 2025, https://www.youtube.com/watch?v=5CiKbk4i8lM
+            44. Switch between Third Person and First Person in Unreal Engine 5 - YouTube, accessed August 23, 2025, https://www.youtube.com/watch?v=8j4vv31B9xM
+            45. Tactical UAV Command Platform - Darley, accessed August 23, 2025, https://www.darley.com/mobile-dfr/
+            46. LAFD Drones and Pilots: Meet the UAS Team!, accessed August 23, 2025, https://www.wodff.org/lafd-drones-and-pilots-meet-the-uas-team/
+            47. Canada Authorizes Drone Swarms Operating Beyond Visual Line of Sight to Fight Wildfires, accessed August 23, 2025, https://dronelife.com/2023/08/31/canada-authorizes-drone-swarms-operating-beyond-visual-line-of-sight-to-fight-wildfires/
+            48. Firefighting drones - YouTube, accessed August 23, 2025, https://www.youtube.com/watch?v=onN64YW-IyI
+            49. Drone Swarms in Fire Suppression Activities: A Conceptual Framework - MDPI, accessed August 23, 2025, https://www.mdpi.com/2504-446X/5/1/17
+            50. Modular Airborne Fire Fighting System > Air Force Reserve Command > Fact Sheet, accessed August 23, 2025, https://www.afrc.af.mil/About-Us/Fact-Sheets/Display/Article/156007/modular-airborne-fire-fighting-system/
+            51. What Is in Fire Retardants Dropped From Planes? - RDR Technologies, accessed August 23, 2025, https://rdrtechnologies.com/blog/fire-retardant-dropped-planes
+            52. Aerial fire retardants: It's raining red - Green Science Policy Institute, accessed August 23, 2025, https://greensciencepolicy.org/news-events/blog/aerial-fire-retardants-its-raining-red
+            53. Retardants | Environment and Climate Change - Government of Northwest Territories, accessed August 23, 2025, https://www.gov.nt.ca/ecc/en/services/wildfire-operations/retardants
+            54. Firefighting foam - Wikipedia, accessed August 23, 2025, https://en.wikipedia.org/wiki/Firefighting_foam
+            55. Fire Suppression Foam - Industrial Protection Services, accessed August 23, 2025, https://www.ipp-ips.com/Products/Fire-Suppression-Foam/
+            56. Interagency Fire Unmanned Aircraft Systems Subcommittee - NWCG, accessed August 23, 2025, https://www.nwcg.gov/committee/interagency-fire-unmanned-aircraft-systems-subcommittee
+            57. NFIRSGram: Calculating fire loss on NFIRS forms - USFA.FEMA.gov, accessed August 23, 2025, https://www.usfa.fema.gov/nfirs/coding-help/calculating-fireloss/
+            58. Forensic Appraisal in Wildfire Claims: Determining True Property Value - Forensis Group, accessed August 23, 2025, https://www.forensisgroup.com/resources/expert-legal-witness-blog/forensic-appraisal-in-wildfire-claims-determining-true-property-value
+            59. A Research Report by - Headwaters Economics, accessed August 23, 2025, https://headwaterseconomics.org/wp-content/uploads/full-wildfire-costs-report.pdf
+            60. Timber as an Investment: 5 Financial Benefits of Forest Management - Buskirk Lumber, accessed August 23, 2025, https://www.buskirklumber.com/financial-benefits-of-forest-management/
+            61. Economic importance of timber - (Appalachian Studies) - Vocab, Definition, Explanations | Fiveable, accessed August 23, 2025, https://library.fiveable.me/key-terms/hs-appalachian-studies/economic-importance-of-timber
+            62. Increasing Damages from Wildfires Warrant Investment in Wildland Fire Management - U.S. Department of the Interior, accessed August 23, 2025, https://www.doi.gov/sites/doi.gov/files/ppa-report-wildland-fire-econ-review-2023-05-25.pdf
+            63. New Study Identifies Costs of Wildfire Fuel Treatment in California - Resources for the Future, accessed August 23, 2025, https://www.rff.org/news/press-releases/new-study-identifies-costs-of-wildfire-fuel-treatment-in-california/
+            64. Wildland Fire Management, Fiscal Year 2022 Annual Report and Large Fire Review - USDA Forest Service, accessed August 23, 2025, https://www.fs.usda.gov/sites/default/files/fy23-wildfire-disaster-funding-adj-report.pdf
+            65. The Economic, Fiscal, and Environmental Costs of Wildfires in California - Gordon and Betty Moore Foundation, accessed August 23, 2025, https://www.moore.org/docs/default-source/default-document-library/the-economic-fiscal-and-environmental-costs-of-wildfires-in-ca.pdf
+            66. 10+ Principles of a Powerful Game UI: Quick Guide | by Julia Zolotarenko - Medium, accessed August 23, 2025, https://hitberrygames.medium.com/10-principles-of-a-powerful-game-ui-quick-guide-6371acbda8a2
+            67. Game Analytics with Data Visualization, accessed August 23, 2025, https://www.numberanalytics.com/blog/game-analytics-data-visualization
+            68. Data Visualization in Games - GameAnalytics, accessed August 23, 2025, https://www.gameanalytics.com/blog/data-visualization-games
+            69. Gaming Analytics Dashboards: Player Behavior Visualization Systems : r/AnalyticsAutomation - Reddit, accessed August 23, 2025, https://www.reddit.com/r/AnalyticsAutomation/comments/1llg5cp/gaming_analytics_dashboards_player_behavior/

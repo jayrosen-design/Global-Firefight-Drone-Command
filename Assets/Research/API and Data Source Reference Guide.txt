@@ -1,0 +1,42 @@
+﻿API and Data Source Reference Guide
+This document provides a consolidated reference for all external APIs and data sources required for the "Global Firefight: Drone Command" project.
+1. NASA FIRMS (Fire Information for Resource Management System)
+Provides near real-time, global active fire hotspot data. This is the primary source for dynamic in-game events.
+* Primary Purpose: To populate the game world with active fire locations, which serve as the main gameplay objective.
+* Authentication: Requires an Earthdata Login API key.
+   * Registration URL: https://firms.modaps.eosdis.nasa.gov/web-services/
+* Recommended Endpoint (Active Fire Data): Downloadable CSV of active fire data. This provides the most detailed information for gameplay mechanics.
+   * Data Format: CSV
+   * Base URL for Download: https://firms.modaps.eosdis.nasa.gov/api/active_fire/
+   * Example Request URL (VIIRS, World, 24 hours):
+https://firms.modaps.eosdis.nasa.gov/api/active_fire/c1/csv/YOUR_API_KEY/VIIRS_SNPP_NRT/world/24h
+
+   * Key Data Fields to Use:
+   * latitude, longitude: For placing the fire on the globe.
+   * confidence: To determine the fire's initial "health".
+   * frp (Fire Radiative Power): To determine the fire's "intensity" and spread rate.
+2. NASA EONET (Earth Observatory Natural Event Tracker)
+Provides curated data on major, named natural events, including significant wildfires. Used to add narrative context and high-priority missions.
+   * Primary Purpose: To identify major wildfire events and create high-value "mission" objectives in the game.
+   * Authentication: No API key is required for public access.
+   * Recommended Endpoint (Active Wildfire Events):
+   * Data Format: GeoJSON
+   * Endpoint URL:
+https://eonet.gsfc.nasa.gov/api/v3/events?category=wildfires&status=open
+
+      * Key Data Fields to Use:
+      * title: The human-readable name of the fire (e.g., "Kincade Fire").
+      * geometry: The coordinates (Point or Polygon) for placing a mission marker on the globe.
+      * link: A URL to a NASA article about the event for optional in-game information panels.
+3. Google Maps Platform (via Cesium for Unity)
+Provides the high-resolution, photorealistic 3D world model for the tactical, third-person drone view.
+      * Primary Purpose: To serve as the high-fidelity visual backdrop for close-up gameplay.
+      * Authentication: Requires a Google Cloud API key with the "Map Tiles API" enabled and billing configured.
+      * Setup Console: https://console.cloud.google.com/
+      * Service: Map Tiles API - Photorealistic 3D Tiles
+      * Endpoint URL (for direct connection in Cesium for Unity):
+      * Data Format: 3D Tiles (consumed by Cesium)
+      * Endpoint URL:
+https://tile.googleapis.com/v1/3dtiles/root.json?key=YOUR_API_KEY
+
+         * Critical Requirement: You must display Google's data attribution on screen. In the Cesium3DTileset component in Unity, ensure the Show Credits On Screen property is checked true.
