@@ -10,6 +10,12 @@ A playable browser prototype lives in [`web/`](web/README.md) — Next.js 14 + T
 cd web && npm install && npm run dev   # http://localhost:3000
 ```
 
+| Global RTS | Tactical drone view | IR White-Hot | Mission debrief |
+| --- | --- | --- | --- |
+| ![RTS](web/docs/screenshots/03-rts-dispatch.png) | ![Tactical](web/docs/screenshots/04-tactical-standard.png) | ![IR](web/docs/screenshots/06-tactical-ir-white-hot.png) | ![Debrief](web/docs/screenshots/08-mission-debrief.png) |
+
+More screenshots and the technical architecture diagram are in [`web/README.md`](web/README.md#screenshots).
+
 ## Project Overview
 
 Global Firefight - Drone Command is an innovative real-time strategy and simulation game developed for the NDIA (National Defense Industrial Association) Hackathon. The project combines real-world wildfire data with strategic drone fleet management to create an immersive firefighting command experience.

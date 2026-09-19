@@ -3,6 +3,26 @@
 Dual-mode RTS / third-person tactical firefighting simulation on a live NASA fire globe.
 Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170 and React Three Fiber.
 
+## Screenshots
+
+| Campaign menu | Global RTS — free play on the live FIRMS globe |
+| --- | --- |
+| ![Campaign menu](docs/screenshots/01-campaign-menu.png) | ![Global RTS free play](docs/screenshots/02-global-rts-freeplay.png) |
+
+| RTS dispatch — Black Summer, arc trajectory + carrier | Tactical drone view — standard colour |
+| --- | --- |
+| ![RTS dispatch](docs/screenshots/03-rts-dispatch.png) | ![Tactical standard](docs/screenshots/04-tactical-standard.png) |
+
+| Tactical — retardant drop knock-down on the reticle | Tactical — IR White-Hot (PERSONNEL DETECTED, hazard callouts) |
+| --- | --- |
+| ![Tactical drop](docs/screenshots/05-tactical-drop.png) | ![Tactical IR](docs/screenshots/06-tactical-ir-white-hot.png) |
+
+| Tactical — LIDAR point cloud (canopy pathways) | Mission debrief — economic ledger |
+| --- | --- |
+| ![Tactical LIDAR](docs/screenshots/07-tactical-lidar.png) | ![Mission debrief](docs/screenshots/08-mission-debrief.png) |
+
+Captured from a scripted headless Chromium run against the bundled fallback dataset (no FIRMS key configured).
+
 ## Run
 
 ```bash
@@ -26,7 +46,94 @@ Set `NEXT_PUBLIC_BASEMAP_TILE_URL` to a `{z}/{x}/{y}` raster template to stream 
 | `MOVE` then click globe relocates a carrier | `V` cycle Standard / IR White-Hot / LIDAR |
 | Fleet panel → click a nation, then the globe, to deploy a forward carrier | `ESC` back to the global view |
 
-## Architecture
+## Technical architecture
+
+```mermaid
+flowchart LR
+  subgraph NASA["NASA data feeds"]
+    FIRMS["FIRMS area CSV<br/>latitude · longitude · frp · confidence"]
+    EONET["EONET v3 GeoJSON<br/>title · geometry · link"]
+  end
+
+  subgraph Server["Next.js 14 App Router (server)"]
+    RF["/api/firms<br/>proxy · MAP_KEY · 15-min revalidate"]
+    RE["/api/eonet<br/>proxy · 1-h revalidate"]
+  end
+
+  subgraph Data["lib/data"]
+    PF["nasa-firms.ts<br/>CSV parse · FRP→intensity · lat/lon→XYZ"]
+    PE["nasa-eonet.ts<br/>GeoJSON centroid"]
+    FB["fallback-fires.ts<br/>offline dataset"]
+  end
+
+  subgraph Store["store/gameStore.ts (Zustand)"]
+    TICK["tick(dt) simulation loop"]
+    DISP["dispatch · deploySuppressant · tacticalDrop"]
+    LEDGER["ledger → FinalScore"]
+  end
+
+  subgraph Engine["lib/engine + lib/geo"]
+    FIRE["fire.ts<br/>growth · damage · applyDrop"]
+    DRONE["DroneUnit.ts / CarrierVehicle.ts"]
+    TRAJ["trajectory.ts<br/>great-circle arcs"]
+    WGS["wgs84.ts<br/>haversine · slerp · surface frame"]
+    ECON["economics.ts<br/>(Property + Lives) − Cost"]
+  end
+
+  subgraph Config["lib/config"]
+    FLEETS["fleets.ts · 6 nations"]
+    SCEN["scenarios.ts · 7 campaigns"]
+  end
+
+  subgraph Globe["components/globe (React Three Fiber)"]
+    G["Globe + TileBasemap + atmosphere"]
+    FL["FireLayer<br/>instanced FRP shader"]
+    EB["EonetBeacons"]
+    CD["Carriers · Drones · Trajectories"]
+    CAM["CameraRig"]
+  end
+
+  subgraph Tactical["components/tactical"]
+    TER["Terrain · Trees · LIDAR cloud"]
+    TF["TacticalFires<br/>flame/smoke particles"]
+    ST["Structures · Civilians"]
+    DC["DroneController<br/>flight · ballistic drops · rescue"]
+  end
+
+  subgraph HUD["components/hud"]
+    TB["TopBar · BottomBar · MissionLog"]
+    TH["TacticalHUD · vision modes"]
+    DB["ScenarioMenu · Debrief"]
+  end
+
+  FIRMS --> RF --> PF
+  EONET --> RE --> PE
+  PF --> Store
+  PE --> Store
+  FB -.fallback.-> Store
+  Config --> Store
+  Engine <--> Store
+  Store --> Globe
+  Store --> Tactical
+  Store --> HUD
+  TRAJ --> CD
+  WGS --> Globe
+```
+
+### Runtime flow
+
+1. **Boot** — `CommandCenter` mounts, `loadFeed()` fetches both proxies; on failure it seeds the fallback dataset.
+2. **Scenario start** — a preset positions the camera, creates `Fire` entities with property/population at risk, and stages the national carrier.
+3. **Dispatch** — selecting a carrier and clicking a fire builds a great-circle `Trajectory`; a `DroneUnit` (or swarm) animates along it with a parabolic altitude profile.
+4. **Suppression** — on arrival drones orbit and drop on a cooldown; `applyDrop` knocks FRP down, retardant marks the fire *contained*, and extinguishing credits the ledger.
+5. **Tactical** — `TACTICAL DRONE VIEW` swaps the globe canvas for the local arena; the player flies, drops (ballistic, predicted-impact reticle), rescues civilians, and cycles Standard / IR / LIDAR.
+6. **Debrief** — `END MISSION` renders the itemised ledger and grade.
+
+### Simulation clock
+
+The RTS runs at 60× (1 real second = 1 simulated minute; selectable 1×/3×/8× multipliers), the tactical view at 6×, so a 40 km sortie takes about a minute of real time while property loss remains gradual.
+
+## Code layout
 
 ```
 app/                      Next.js App Router shell + API proxies
