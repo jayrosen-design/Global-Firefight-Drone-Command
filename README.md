@@ -43,7 +43,30 @@ npm run dev                  # http://localhost:3000
 
 Without a FIRMS key the app uses a bundled fallback fire dataset so it always runs. For live data set
 `FIRMS_MAP_KEY` (free key: https://firms.modaps.eosdis.nasa.gov/api/map_key/). EONET needs no key.
-Set `NEXT_PUBLIC_BASEMAP_TILE_URL` to a `{z}/{x}/{y}` raster template to stream a tile basemap onto the globe.
+
+### Real-world 3D map (God Eye map stack)
+
+The globe and the tactical arena are real-world 3D tiles streamed with [`3d-tiles-renderer`](https://github.com/NASA-AMMOS/3DTilesRendererJS).
+The map route is chosen the same way as [gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) (`src/maps/google3d.js`):
+
+| Credential in `web/.env.local` | Route | What you see |
+| --- | --- | --- |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | **google-direct** | Google Photorealistic 3D Tiles (Map Tiles API) — buildings, trees, terrain |
+| `NEXT_PUBLIC_CESIUM_ION_TOKEN` | **google-ion** | The same Google tiles served via Cesium ion asset `2275207` |
+| *(neither)* | **keyless** | Re:Earth / Mapterhorn quantized-mesh terrain (CC BY 4.0) draped with Esri World Imagery |
+| `NEXT_PUBLIC_DISABLE_3D_TILES=1` | **off** | Vector basemap globe + procedural tactical terrain |
+
+Both credentials are client-exposed by design (they are used in the browser) — restrict them by HTTP referrer and API scope
+in the provider console. On Vercel add them as project environment variables and redeploy; `NEXT_PUBLIC_*` values are
+inlined at build time.
+
+If the tile source cannot be reached (root tileset error, or nothing within 20 s) the app falls back the way God Eye does:
+the globe restores its raster basemap and the tactical view uses procedural terrain, with a `MAP UNAVAILABLE` notice in the HUD.
+
+In the global view the tiles are scaled into the WGS84 unit-globe frame under the HUD; in the tactical view the tileset is
+re-oriented so the target fire sits at the origin with +Y up, and fires, protected structures and survivors are projected from
+their real coordinates and settled onto the streamed surface by raycasting the tiles. IR White-Hot swaps tile materials for a
+monochrome shader; LIDAR re-renders the tile geometry as an elevation-coloured point cloud.
 
 ### Controls
 
@@ -506,7 +529,11 @@ app/                      Next.js App Router shell + API proxies
   api/eonet/route.ts      EONET v3 open wildfire events proxy
 lib/geo/wgs84.ts          lat/lon ⇄ globe Cartesian, haversine, great-circle interpolation
 lib/geo/trajectory.ts     TrajectoryManager — great-circle arcs with parabolic altitude
-lib/geo/earthTexture.ts   Dark tactical basemap from Natural Earth (world-atlas) TopoJSON
+lib/geo/earthTexture.ts   Dark tactical basemap from Natural Earth (world-atlas) TopoJSON (loading fallback)
+lib/config/tiles.ts       Map route selection (google-direct / google-ion / keyless / off)
+lib/tiles/                DRACO + BVH setup, globe surface sampler, vision-mode tile materials
+components/tiles/         WorldTiles — 3d-tiles-renderer wrapper for both views (auth, terrain, imagery, attribution)
+components/tactical/TacticalWorld.tsx  Terrain provider: reoriented tiles or procedural fallback
 lib/data/nasa-firms.ts    CSV parser, FRP → intensity, hotspot → Vector3
 lib/data/nasa-eonet.ts    GeoJSON parser (title / geometry / link)
 lib/data/fallback-fires.ts Offline dataset
@@ -539,8 +566,10 @@ components/hud/           TopBar, BottomBar, MissionLog, ScenarioMenu, TacticalH
 
 #### God Eye adaptation
 
-The globe layer follows God Eye's approach (unit-sphere WGS84 globe, streamed Web-Mercator raster tiles as sphere
-patches, fresnel atmosphere) but is re-implemented here in React Three Fiber; no God Eye source is vendored.
+[gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) is a CesiumJS console; this project's spec is Three.js / React Three Fiber, so the
+same map stack (Google Photorealistic 3D Tiles directly or via Cesium ion, keyless Re:Earth terrain + Esri imagery) is streamed
+through `3d-tiles-renderer` instead of Cesium. Credential names and route precedence follow God Eye's `google3d.js`; no God Eye
+source is vendored.
 
 ### Scripts
 

@@ -8,6 +8,8 @@ import type { CarrierVehicle } from '@/lib/engine/CarrierVehicle';
 import { FLEETS } from '@/lib/config/fleets';
 import { useGame } from '@/store/gameStore';
 import { CarrierModel } from '@/components/models/CarrierModel';
+import { useGlobeTiles } from '@/lib/tiles/TilesContext';
+import { SurfaceTracker } from '@/lib/tiles/surface';
 
 function Carrier({ carrier }: { carrier: CarrierVehicle }) {
   const group = useRef<Group>(null);
@@ -17,11 +19,13 @@ function Carrier({ carrier }: { carrier: CarrierVehicle }) {
   const mat = useMemo(() => new Matrix4(), []);
   const camDir = useMemo(() => new Vector3(), []);
   const label = useRef<HTMLDivElement>(null);
+  const tiles = useGlobeTiles();
+  const tracker = useMemo(() => new SurfaceTracker(), []);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
     const g = group.current;
     if (!g) return;
-    latLonToVector3(carrier.lat, carrier.lon, 0, g.position);
+    latLonToVector3(carrier.lat, carrier.lon, tracker.update(tiles, carrier.lat, carrier.lon, clock.elapsedTime), g.position);
     const { up, north, east } = surfaceFrame(carrier.lat, carrier.lon);
     mat.makeBasis(east, up, north.clone().negate());
     g.quaternion.setFromRotationMatrix(mat);

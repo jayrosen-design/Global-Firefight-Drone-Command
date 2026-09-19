@@ -9,6 +9,8 @@ import type { DroneUnit } from '@/lib/engine/DroneUnit';
 import { FLEETS } from '@/lib/config/fleets';
 import { useGame } from '@/store/gameStore';
 import { DroneModel } from '@/components/models/DroneModel';
+import { useGlobeTiles } from '@/lib/tiles/TilesContext';
+import { SurfaceTracker } from '@/lib/tiles/surface';
 
 const ORBIT_ALT_KM = 3;
 const ORBIT_RADIUS_KM = 9;
@@ -19,9 +21,11 @@ function Drone({ drone }: { drone: DroneUnit }) {
   const select = useGame((s) => s.select);
   const fleet = FLEETS[drone.country];
   const label = useRef<HTMLDivElement>(null);
+  const tiles = useGlobeTiles();
+  const tracker = useMemo(() => new SurfaceTracker(), []);
   const tmp = useMemo(() => ({ pos: new Vector3(), fwd: new Vector3(), up: new Vector3(), right: new Vector3(), m: new Matrix4(), q: new Quaternion() }), []);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
     const g = group.current;
     if (!g) return;
     // Read the live unit from the store so the transform tracks the simulation without re-rendering.
@@ -39,7 +43,8 @@ function Drone({ drone }: { drone: DroneUnit }) {
       }
     } else {
       // Orbit the target fire
-      const center = latLonToVector3(live.destination.lat, live.destination.lon, ORBIT_ALT_KM, tmp.pos);
+      const groundKm = tracker.update(tiles, live.destination.lat, live.destination.lon, clock.elapsedTime);
+      const center = latLonToVector3(live.destination.lat, live.destination.lon, groundKm + ORBIT_ALT_KM, tmp.pos);
       tmp.up.copy(center).normalize();
       const east = new Vector3().crossVectors(new Vector3(0, 1, 0), tmp.up).normalize();
       const north = new Vector3().crossVectors(tmp.up, east).normalize();

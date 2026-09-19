@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import { BackSide, Color } from 'three';
+import { BackSide, Color, Ray, Vector3 } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import { GLOBE_RADIUS, vector3ToLatLon } from '@/lib/geo/wgs84';
 import { buildEarthTexture } from '@/lib/geo/earthTexture';
@@ -30,14 +30,28 @@ void main() {
  * fresnel atmosphere and optional streamed raster tiles. All click handling
  * on the bare globe (carrier placement, carrier MOVE orders) lives here.
  */
-export function Globe() {
+/** Ray ∩ sphere of radius r about the origin (closest hit), or null. */
+function hitSphere(ray: Ray, r: number, out: Vector3): Vector3 | null {
+  const o = ray.origin, d = ray.direction;
+  const b = o.dot(d);
+  const c = o.lengthSq() - r * r;
+  const disc = b * b - c;
+  if (disc < 0) return null;
+  const t = -b - Math.sqrt(disc);
+  if (t < 0) return null;
+  return out.copy(d).multiplyScalar(t).add(o);
+}
+
+export function Globe({ tilesActive = false }: { tilesActive?: boolean }) {
   const texture = useMemo(() => buildEarthTexture(), []);
   const atmoUniforms = useMemo(() => ({ uColor: { value: new Color('#1f8fd8') } }), []);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     const st = useGame.getState();
-    const ll = vector3ToLatLon(e.point);
+    // With streamed tiles the pick point comes from the sunken fallback sphere; re-intersect at the true radius.
+    const p = hitSphere(e.ray, GLOBE_RADIUS + 0.0005, new Vector3()) ?? e.point;
+    const ll = vector3ToLatLon(p);
     if (st.placingCarrier) return st.placeCarrierAt(ll);
     if (st.selection?.type === 'carrier' && st.moveArmed) {
       st.moveCarrier(st.selection.id, ll);
@@ -49,11 +63,11 @@ export function Globe() {
 
   return (
     <group>
-      <mesh onClick={onClick} onPointerMissed={() => undefined}>
+      <mesh onClick={onClick} onPointerMissed={() => undefined} scale={tilesActive ? 0.9965 : 1}>
         <sphereGeometry args={[GLOBE_RADIUS, 128, 96]} />
         <meshStandardMaterial map={texture} roughness={0.85} metalness={0.05} emissive={new Color('#06141f')} emissiveIntensity={0.5} />
       </mesh>
-      <TileBasemap />
+      {!tilesActive && <TileBasemap />}
       {/* Inner rim glow */}
       <mesh scale={1.004}>
         <sphereGeometry args={[GLOBE_RADIUS, 96, 64]} />

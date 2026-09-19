@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import { FLEETS } from '@/lib/config/fleets';
 import type { DroneUnit } from '@/lib/engine/DroneUnit';
-import { terrainHeight } from '@/lib/tactical/local';
+import { useTacticalTerrain } from './TacticalWorld';
 import { useGame, type VisionMode } from '@/store/gameStore';
 import { useTelemetry } from '@/store/telemetryStore';
 import { DroneModel } from '@/components/models/DroneModel';
@@ -33,7 +33,6 @@ export function DroneController({
   fires,
   civilians,
   setCivilians,
-  seed,
   vision,
   onDrop,
 }: {
@@ -41,12 +40,12 @@ export function DroneController({
   fires: LocalFire[];
   civilians: Civilian[];
   setCivilians: (fn: (c: Civilian[]) => Civilian[]) => void;
-  seed: number;
   vision: VisionMode;
   onDrop: (fireId: string, litres: number) => void;
 }) {
   const group = useRef<Group>(null);
   const { camera } = useThree();
+  const terrain = useTacticalTerrain();
   const fleet = FLEETS[drone.country];
   const keys = useRef<Set<string>>(new Set());
   const state = useRef({ pos: new Vector3(0, 220, 700), yaw: Math.PI, pitch: 0, speed: 0, rescueHold: 0, dropCooldown: 0 });
@@ -58,7 +57,7 @@ export function DroneController({
   useEffect(() => {
     // Spawn above the nearest fire with a run-in
     const first = fires[0];
-    if (first) state.current.pos.set(first.x, first.y + 150, first.z + 650);
+    if (first) state.current.pos.set(first.x, first.y + 150, first.z + (terrain.real ? 1100 : 650));
     const down = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (KEYS.has(k)) {
@@ -82,6 +81,7 @@ export function DroneController({
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fires]);
 
   useFrame((_, dtRaw) => {
@@ -94,14 +94,14 @@ export function DroneController({
     // Controls
     const boost = k.has('shift') ? 1.8 : 1;
     const throttle = (k.has('w') || k.has('arrowup') ? 1 : 0) - (k.has('s') || k.has('arrowdown') ? 0.6 : 0);
-    s.speed += (throttle * spec.maxSpeed * boost - s.speed) * Math.min(1, dt * 1.6);
+    s.speed += (throttle * spec.maxSpeed * terrain.speedScale * boost - s.speed) * Math.min(1, dt * 1.6);
     const yawIn = (k.has('a') || k.has('arrowleft') ? 1 : 0) - (k.has('d') || k.has('arrowright') ? 1 : 0);
     s.yaw += yawIn * spec.turnRate * dt;
     const climb = (k.has('e') ? 1 : 0) - (k.has('q') ? 1 : 0);
     tmp.fwd.set(Math.sin(s.yaw), 0, Math.cos(s.yaw));
     s.pos.addScaledVector(tmp.fwd, s.speed * dt);
-    s.pos.y += climb * 28 * dt;
-    const ground = terrainHeight(s.pos.x, s.pos.z, seed);
+    s.pos.y += climb * 28 * terrain.speedScale * dt;
+    const ground = terrain.height(s.pos.x, s.pos.z);
     s.pos.y = Math.max(ground + 6, Math.min(ground + 600, s.pos.y));
     s.pitch += ((throttle * 0.18 - s.pitch) * dt) * 4;
 
@@ -112,7 +112,8 @@ export function DroneController({
     }
 
     // Chase camera
-    tmp.camTarget.copy(s.pos).addScaledVector(tmp.fwd, -42).setY(s.pos.y + 16);
+    const camBack = terrain.real ? 60 : 42;
+    tmp.camTarget.copy(s.pos).addScaledVector(tmp.fwd, -camBack).setY(s.pos.y + camBack * 0.4);
     camera.position.lerp(tmp.camTarget, Math.min(1, dt * 4));
     tmp.look.copy(s.pos).addScaledVector(tmp.fwd, 60);
     camera.lookAt(tmp.look);
@@ -134,7 +135,8 @@ export function DroneController({
         nearest = lf;
       }
     }
-    const reticleLocked = !!nearest && nd < spec.dropRadius * 6 + 40;
+    const dropWindow = (spec.dropRadius * 6 + 40) * (terrain.real ? 1.6 : 1);
+    const reticleLocked = !!nearest && nd < dropWindow;
 
     // Drops
     s.dropCooldown -= dt;
@@ -154,7 +156,7 @@ export function DroneController({
       }
       d.vel.y -= 9.81 * dt * 2.2;
       d.pos.addScaledVector(d.vel, dt);
-      const gy = terrainHeight(d.pos.x, d.pos.z, seed);
+      const gy = terrain.height(d.pos.x, d.pos.z);
       if (d.pos.y <= gy + 1) {
         d.pos.y = gy + 1;
         d.splash = 0.9;
@@ -170,9 +172,8 @@ export function DroneController({
           }
         }
         // Payload was debited at release; a miss simply wastes it.
-        const window = spec.dropRadius * 6 + 40;
-        if (best && bd < window) {
-          const inten = Math.max(0.35, 1 - bd / window);
+        if (best && bd < dropWindow) {
+          const inten = Math.max(0.35, 1 - bd / dropWindow);
           onDrop(best.fire.id, d.litres * inten);
         } else {
           useTelemetry.getState().set({ lastDropKnockdownMW: 0 });

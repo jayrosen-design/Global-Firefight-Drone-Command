@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture, TextureLoader } from 'three';
 import { latLonToVector3 } from '@/lib/geo/wgs84';
 
-const TILE_URL = process.env.NEXT_PUBLIC_BASEMAP_TILE_URL ?? '';
-const ZOOM = 3;
+import { BASEMAP_TILE_URL } from '@/lib/config/tiles';
+
+const TILE_URL = BASEMAP_TILE_URL;
+const ZOOM = 4;
 
 function tile2lon(x: number, z: number) {
   return (x / 2 ** z) * 360 - 180;

@@ -1,5 +1,9 @@
 'use client';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
+import type { TilesRenderer as TilesRendererImpl } from '3d-tiles-renderer/three';
+import { GlobeTilesContext } from '@/lib/tiles/TilesContext';
+import { WorldTiles, type TilesStatus } from '@/components/tiles/WorldTiles';
+import { HAS_3D_TILES } from '@/lib/config/tiles';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGame } from '@/store/gameStore';
 import { Globe } from './Globe';
@@ -32,6 +36,9 @@ function FeedLayers() {
 }
 
 export function GlobeScene() {
+  const [tiles, setTiles] = useState<TilesRendererImpl | null>(null);
+  const [status, setStatus] = useState<TilesStatus>('loading');
+  const active = HAS_3D_TILES && status === 'ready';
   return (
     <Canvas
       className="absolute inset-0"
@@ -45,14 +52,17 @@ export function GlobeScene() {
       <directionalLight position={[5, 3, 4]} intensity={1.1} color="#dfefff" />
       <directionalLight position={[-4, -2, -3]} intensity={0.25} color="#5ef2ff" />
       <Stars />
-      <Suspense fallback={null}>
-        <Globe />
-        <FeedLayers />
-        <FireEntities />
-        <Trajectories />
-        <Carriers />
-        <Drones />
-      </Suspense>
+      <GlobeTilesContext.Provider value={active ? tiles : null}>
+        <Suspense fallback={null}>
+          <Globe tilesActive={active} />
+          {HAS_3D_TILES && status !== 'failed' && <WorldTiles mode="globe" onTiles={setTiles} onStatus={setStatus} errorTarget={12} />}
+          <FeedLayers />
+          <FireEntities />
+          <Trajectories />
+          <Carriers />
+          <Drones />
+        </Suspense>
+      </GlobeTilesContext.Provider>
       <CameraRig />
       <Simulation />
     </Canvas>

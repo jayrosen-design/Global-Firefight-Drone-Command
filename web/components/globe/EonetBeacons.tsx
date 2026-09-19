@@ -6,6 +6,8 @@ import { Group, Mesh } from 'three';
 import type { EonetEvent } from '@/lib/data/types';
 import { latLonToVector3, surfaceFrame } from '@/lib/geo/wgs84';
 import { useGame } from '@/store/gameStore';
+import { useGlobeTiles } from '@/lib/tiles/TilesContext';
+import { SurfaceTracker } from '@/lib/tiles/surface';
 
 /** Pulsating beacon for a named EONET wildfire crisis. */
 function Beacon({ ev, index }: { ev: EonetEvent; index: number }) {
@@ -13,6 +15,8 @@ function Beacon({ ev, index }: { ev: EonetEvent; index: number }) {
   const ring = useRef<Mesh>(null);
   const ring2 = useRef<Mesh>(null);
   const label = useRef<HTMLDivElement>(null);
+  const tiles = useGlobeTiles();
+  const tracker = useMemo(() => new SurfaceTracker(), []);
   const flyTo = useGame((s) => s.flyTo);
   const { position, quaternion } = useMemo(() => {
     const p = latLonToVector3(ev.latitude, ev.longitude, 0);
@@ -27,6 +31,7 @@ function Beacon({ ev, index }: { ev: EonetEvent; index: number }) {
     if (root.current) {
       const d = camera.position.length() - 1;
       root.current.scale.setScalar(Math.max(0.0006, Math.min(0.01, d * 0.02)));
+      latLonToVector3(ev.latitude, ev.longitude, tracker.update(tiles, ev.latitude, ev.longitude, clock.elapsedTime), root.current.position);
       const facing = position.clone().normalize().dot(camera.position.clone().normalize());
       root.current.visible = facing > -0.05;
       if (label.current) label.current.style.opacity = facing > 0.08 ? '1' : '0';

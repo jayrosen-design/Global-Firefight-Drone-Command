@@ -7,6 +7,8 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { latLonToVector3, surfaceFrame } from '@/lib/geo/wgs84';
 import { intensity, type Fire } from '@/lib/engine/fire';
 import { useGame } from '@/store/gameStore';
+import { useGlobeTiles } from '@/lib/tiles/TilesContext';
+import { SurfaceTracker } from '@/lib/tiles/surface';
 import { FLEETS } from '@/lib/config/fleets';
 
 /**
@@ -18,6 +20,8 @@ function FireEntity({ fire }: { fire: Fire }) {
   const group = useRef<Group>(null);
   const core = useRef<Mesh>(null);
   const label = useRef<HTMLDivElement>(null);
+  const tiles = useGlobeTiles();
+  const tracker = useMemo(() => new SurfaceTracker(), []);
   const select = useGame((s) => s.select);
   const selected = useGame((s) => s.selection?.type === 'fire' && s.selection.id === fire.id);
   const hovered = useGame((s) => s.hoverFireId === fire.id);
@@ -37,6 +41,8 @@ function FireEntity({ fire }: { fire: Fire }) {
     if (group.current) {
       const d = camera.position.length() - 1;
       group.current.scale.setScalar(Math.max(0.00035, Math.min(0.004, d * 0.012)));
+      const km = tracker.update(tiles, fire.lat, fire.lon, clock.elapsedTime);
+      latLonToVector3(fire.lat, fire.lon, km, group.current.position);
       const facing = position.clone().normalize().dot(camera.position.clone().normalize());
       group.current.visible = facing > -0.05;
       if (label.current) label.current.style.opacity = facing > 0.08 ? '1' : '0';

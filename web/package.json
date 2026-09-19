@@ -13,10 +13,12 @@
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "3d-tiles-renderer": "^0.5.3",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.170.0",
+    "three-mesh-bvh": "^0.9.15",
     "topojson-client": "^3.1.0",
     "world-atlas": "^2.0.2",
     "zustand": "^5.0.0"

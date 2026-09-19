@@ -2,6 +2,7 @@
 import { useGame, type VisionMode } from '@/store/gameStore';
 import { useTelemetry } from '@/store/telemetryStore';
 import { FLEETS } from '@/lib/config/fleets';
+import { MAP_ROUTE, MAP_ROUTE_LABEL } from '@/lib/config/tiles';
 
 const MODES: { id: VisionMode; label: string }[] = [
   { id: 'standard', label: 'STANDARD' },
@@ -63,6 +64,8 @@ export function TacticalHUD() {
         {t.nearCivilian ? <span className="thud__alert">▣ PERSONNEL IN RANGE — HOLD R TO EXTRACT</span> : <span>W/S THROTTLE · A/D YAW · Q/E ALT · SHIFT BOOST · SPACE DROP · R EXTRACT · V VISION</span>}
         <span className="ml-4 text-white/50">SURVIVORS REMAINING {t.civiliansRemaining}</span>
       </div>
+      {t.mapStatus === 'loading' && <div className="thud__mapstatus">◌ STREAMING {MAP_ROUTE_LABEL[MAP_ROUTE.kind]}…</div>}
+      {t.mapStatus === 'failed' && <div className="thud__mapstatus thud__mapstatus--warn">⚠ MAP UNAVAILABLE — PROCEDURAL TERRAIN</div>}
       {vision === 'ir' && <div className="thud__watermark">IR · WHITE HOT · {fleet.drone.abilities.some((a) => a.id === 'uxo') ? 'UXO SWEEP ACTIVE' : 'THERMAL IMAGING'}</div>}
       {vision === 'lidar' && <div className="thud__watermark">LIDAR · POINT CLOUD · CANOPY PATHWAYS</div>}
     </div>

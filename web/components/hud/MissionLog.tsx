@@ -1,5 +1,6 @@
 'use client';
 import { useGame } from '@/store/gameStore';
+import { MAP_ROUTE, MAP_ROUTE_LABEL } from '@/lib/config/tiles';
 
 export function MissionLog() {
   const log = useGame((s) => s.log);
@@ -17,7 +18,7 @@ export function MissionLog() {
         </ul>
         {feed && (
           <div className="mt-2 border-t border-white/10 pt-1 text-[10px] text-white/50">
-            FIRMS {feed.source === 'live' ? 'LIVE' : 'FALLBACK'} · {feed.hotspots.length.toLocaleString()} hotspots · {feed.events.length} EONET events
+            MAP {MAP_ROUTE_LABEL[MAP_ROUTE.kind]} · FIRMS {feed.source === 'live' ? 'LIVE' : 'FALLBACK'} · {feed.hotspots.length.toLocaleString()} hotspots · {feed.events.length} EONET events
             {feed.message ? ` · ${feed.message}` : ''}
           </div>
         )}

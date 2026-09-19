@@ -145,3 +145,6 @@ select.btn { appearance: none; }
 .reticle--locked .reticle__label { color: #ffd54f; }
 .thud--ir .reticle__ring, .thud--ir .reticle__label { border-color: #fff; color: #fff; }
 @keyframes lock { from { transform: scale(1.25); } to { transform: scale(1); } }
+
+.thud__mapstatus { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: 0.24em; color: rgba(94,242,255,0.85); background: rgba(4,10,16,0.6); padding: 4px 10px; border-radius: 3px; border: 1px solid var(--line); animation: blink 1.6s steps(2) infinite; }
+.thud__mapstatus--warn { color: #ffb39a; animation: none; }

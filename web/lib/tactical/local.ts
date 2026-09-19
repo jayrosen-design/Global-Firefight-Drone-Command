@@ -10,11 +10,11 @@ export const COMPRESSION = 0.12;
 export const ARENA = 3000; // metres, half-width
 const M_PER_DEG_LAT = 110_540;
 
-export function toLocal(origin: LatLon, p: LatLon): [number, number] {
+export function toLocal(origin: LatLon, p: LatLon, compression = COMPRESSION, clampM = ARENA): [number, number] {
   const mPerDegLon = 111_320 * Math.cos((origin.lat * Math.PI) / 180);
-  const x = (p.lon - origin.lon) * mPerDegLon * COMPRESSION;
-  const z = -(p.lat - origin.lat) * M_PER_DEG_LAT * COMPRESSION;
-  return [Math.max(-ARENA, Math.min(ARENA, x)), Math.max(-ARENA, Math.min(ARENA, z))];
+  const x = (p.lon - origin.lon) * mPerDegLon * compression;
+  const z = -(p.lat - origin.lat) * M_PER_DEG_LAT * compression;
+  return [Math.max(-clampM, Math.min(clampM, x)), Math.max(-clampM, Math.min(clampM, z))];
 }
 
 export function terrainHeight(x: number, z: number, seed = 11): number {

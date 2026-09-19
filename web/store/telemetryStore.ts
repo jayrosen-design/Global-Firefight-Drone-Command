@@ -15,6 +15,7 @@ interface Telemetry {
   /** Local arena position (m) for the tactical minimap / debugging. */
   x: number;
   z: number;
+  mapStatus: 'loading' | 'ready' | 'failed' | 'off';
   set: (t: Partial<Telemetry>) => void;
 }
 
@@ -30,5 +31,6 @@ export const useTelemetry = create<Telemetry>((set) => ({
   lastDropKnockdownMW: 0,
   x: 0,
   z: 0,
+  mapStatus: 'off',
   set: (t) => set(t),
 }));
