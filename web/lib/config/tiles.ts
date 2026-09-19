@@ -4,8 +4,9 @@
  *
  *  google-direct  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY  → Google Photorealistic 3D Tiles (Map Tiles API)
  *  google-ion     NEXT_PUBLIC_CESIUM_ION_TOKEN     → the same Google tiles hosted by Cesium ion (asset 2275207)
- *  keyless        (no credentials)                 → Re:Earth / Mapterhorn quantized-mesh terrain (CC BY 4.0)
- *                                                    draped with Esri World Imagery — God Eye's keyless globe
+ *  keyless        (no credentials)                 → globe: Re:Earth / Mapterhorn quantized-mesh terrain (CC BY 4.0)
+ *                                                    draped with Esri World Imagery — God Eye's keyless globe;
+ *                                                    tactical drone view: procedural 3D terrain
  *  off            NEXT_PUBLIC_DISABLE_3D_TILES=1   → vector basemap globe + procedural tactical terrain only
  *
  * Both credentials are client-exposed by design (they are used in the browser);
@@ -32,6 +33,8 @@ export function selectMapRoute(): MapRoute {
 
 export const MAP_ROUTE = selectMapRoute();
 export const HAS_3D_TILES = MAP_ROUTE.kind !== 'off';
+/** The tactical drone view only streams photorealistic tiles when a Google / ion credential is set; keyless uses procedural terrain. */
+export const HAS_TACTICAL_TILES = MAP_ROUTE.kind === 'google-direct' || MAP_ROUTE.kind === 'google-ion';
 
 export const MAP_ROUTE_LABEL: Record<MapRoute['kind'], string> = {
   'google-direct': 'GOOGLE 3D TILES',

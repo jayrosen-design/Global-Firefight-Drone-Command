@@ -53,7 +53,7 @@ The map route is chosen the same way as [gods-eye-view](https://github.com/bilaw
 | --- | --- | --- |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | **google-direct** | Google Photorealistic 3D Tiles (Map Tiles API) — buildings, trees, terrain |
 | `NEXT_PUBLIC_CESIUM_ION_TOKEN` | **google-ion** | The same Google tiles served via Cesium ion asset `2275207` |
-| *(neither)* | **keyless** | Re:Earth / Mapterhorn quantized-mesh terrain (CC BY 4.0) draped with Esri World Imagery |
+| *(neither)* | **keyless** | Globe: Re:Earth / Mapterhorn quantized-mesh terrain (CC BY 4.0) draped with Esri World Imagery. Drone view: procedural 3D terrain |
 | `NEXT_PUBLIC_DISABLE_3D_TILES=1` | **off** | Vector basemap globe + procedural tactical terrain |
 
 Both credentials are client-exposed by design (they are used in the browser) — restrict them by HTTP referrer and API scope
@@ -62,6 +62,9 @@ inlined at build time.
 
 If the tile source cannot be reached (root tileset error, or nothing within 20 s) the app falls back the way God Eye does:
 the globe restores its raster basemap and the tactical view uses procedural terrain, with a `MAP UNAVAILABLE` notice in the HUD.
+
+Photorealistic tiles in the tactical drone view require a Google or ion credential; without one the drone view keeps the
+procedural heightmap terrain so it is always playable.
 
 In the global view the tiles are scaled into the WGS84 unit-globe frame under the HUD; in the tactical view the tileset is
 re-oriented so the target fire sits at the origin with +Y up, and fires, protected structures and survivors are projected from

@@ -4,7 +4,7 @@ import { Intersection, Raycaster, Vector3 } from 'three';
 import type { TilesRenderer as TilesRendererImpl } from '3d-tiles-renderer/three';
 import { WorldTiles, type TilesStatus } from '@/components/tiles/WorldTiles';
 import { useTelemetry } from '@/store/telemetryStore';
-import { HAS_3D_TILES } from '@/lib/config/tiles';
+import { HAS_TACTICAL_TILES } from '@/lib/config/tiles';
 import { latLonToEcef, type LatLon } from '@/lib/geo/wgs84';
 import { terrainHeight, toLocal } from '@/lib/tactical/local';
 import { setLidarElevationRange } from '@/lib/tiles/vision';
@@ -47,14 +47,14 @@ const ecef = new Vector3();
  */
 export function TacticalWorld({ origin, seed, vision, children }: { origin: LatLon; seed: number; vision: VisionMode; children: React.ReactNode }) {
   const [tiles, setTiles] = useState<TilesRendererImpl | null>(null);
-  const [status, setStatus] = useState<TilesStatus>(HAS_3D_TILES ? 'loading' : 'failed');
+  const [status, setStatus] = useState<TilesStatus>(HAS_TACTICAL_TILES ? 'loading' : 'failed');
   const cache = useRef(new Map<string, number>());
-  const useReal = HAS_3D_TILES && status !== 'failed';
+  const useReal = HAS_TACTICAL_TILES && status !== 'failed';
   const ready = !useReal || status === 'ready';
 
   useEffect(() => {
     if (status === 'ready' && tiles) tiles.group.updateMatrixWorld(true);
-    useTelemetry.getState().set({ mapStatus: HAS_3D_TILES ? status : 'off' });
+    useTelemetry.getState().set({ mapStatus: HAS_TACTICAL_TILES ? status : 'off' });
   }, [status, tiles]);
 
   const terrain = useMemo<TacticalTerrain>(() => {
