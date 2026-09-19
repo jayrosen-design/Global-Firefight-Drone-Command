@@ -2,6 +2,14 @@
 
 **🚧 Work in Progress - NDIA Hackathon Project 🚧**
 
+## ▶ Web Prototype (God Eye fork)
+
+A playable browser prototype lives in [`web/`](web/README.md) — Next.js 14 + Three.js / React Three Fiber, live NASA FIRMS & EONET feeds, six national fleets, seven campaign presets, IR and LIDAR vision modes, and the economic debrief.
+
+```bash
+cd web && npm install && npm run dev   # http://localhost:3000
+```
+
 ## Project Overview
 
 Global Firefight - Drone Command is an innovative real-time strategy and simulation game developed for the NDIA (National Defense Industrial Association) Hackathon. The project combines real-world wildfire data with strategic drone fleet management to create an immersive firefighting command experience.
