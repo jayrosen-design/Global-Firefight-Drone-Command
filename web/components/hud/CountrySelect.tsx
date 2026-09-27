@@ -5,6 +5,8 @@ import { COUNTRY_CODES, FLEETS, fleetUiColor, type CountryCode } from '@/lib/con
 import { SCENARIOS } from '@/lib/config/scenarios';
 import { fmtUSD } from '@/lib/engine/economics';
 import { useGame } from '@/store/gameStore';
+import { conceptArtUrl, portraitUrl } from '@/lib/config/teamArt';
+import { TeamImage } from './TeamImage';
 
 const ArmoryViewer = dynamic(() => import('./ArmoryViewer').then((m) => m.ArmoryViewer), { ssr: false });
 
@@ -80,7 +82,14 @@ export function CountrySelect() {
         </div>
 
         <div className="cs__body">
-          {/* Armory turntable */}
+          {/* Armory: pitch-deck concept art + 3D turntable */}
+          <div className="cs__armory">
+          <TeamImage
+            src={conceptArtUrl(code)}
+            alt={`${f.country} concept art`}
+            className="cs__concept"
+            fallback={null}
+          />
           <div className="cs__viewer">
             <ArmoryViewer country={code} />
             <div className="cs__viewer-tag cs__viewer-tag--top">
@@ -94,6 +103,8 @@ export function CountrySelect() {
               <div className="stat__sub">{f.carrier.description} · {f.carrier.droneCapacity} drones · rearm {f.carrier.rearmSeconds}s</div>
             </div>
           </div>
+          <TeamImage src={conceptArtUrl(code, 'scene')} alt={`${f.country} campaign concept`} className="cs__concept cs__concept--scene" fallback={null} />
+          </div>
 
           {/* Right column: crew, specs, abilities, campaigns */}
           <div className="cs__info">
@@ -101,7 +112,7 @@ export function CountrySelect() {
             <ul className="cs__crew">
               {f.crew.map((m) => (
                 <li key={m.callSign} className="cs__crew-row">
-                  <span className="cs__crew-avatar" aria-hidden>{m.name.split(' ').slice(-1)[0][0]}</span>
+                  <TeamImage src={portraitUrl(code, m)} alt={m.name} className="cs__crew-portrait" fallback={<span className="cs__crew-avatar" aria-hidden>{m.name.split(' ').slice(-1)[0][0]}</span>} />
                   <span className="cs__crew-name">{m.name}</span>
                   <span className="cs__crew-role">{m.role}</span>
                   <span className="cs__crew-cs">{m.callSign}</span>

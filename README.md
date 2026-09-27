@@ -71,6 +71,19 @@ re-oriented so the target fire sits at the origin with +Y up, and fires, protect
 their real coordinates and settled onto the streamed surface by raycasting the tiles. IR White-Hot swaps tile materials for a
 monochrome shader; LIDAR re-renders the tile geometry as an elevation-coloured point cloud.
 
+### Pitch-deck art on the country select screen
+
+Character portraits and concept art from the pitch deck are loaded by file convention, with graceful fallbacks when a file
+is missing (initial-letter avatars, no art strip):
+
+```
+web/public/teams/<CODE>/concept.jpg           hero concept art, shown above the 3D armory turntable
+web/public/teams/<CODE>/scene.jpg             optional campaign environment frame, shown below it
+web/public/teams/<CODE>/crew/<CALLSIGN>.jpg   crew portraits (call signs are in web/lib/config/fleets.ts)
+```
+
+`<CODE>` ∈ `USA CAN BRA CHN DEU AUS`. See [`web/public/teams/README.md`](web/public/teams/README.md).
+
 ### Controls
 
 | Global RTS | Tactical drone |

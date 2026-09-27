@@ -166,7 +166,7 @@ select.btn { appearance: none; }
 .cs__country { font-size: 34px; font-weight: 800; letter-spacing: 0.08em; line-height: 1.05; }
 .cs__agency { font-size: 12px; letter-spacing: 0.14em; color: var(--accent); margin-top: 4px; }
 .cs__nav { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.cs__body { display: grid; grid-template-columns: minmax(380px, 1.1fr) minmax(420px, 1fr); gap: 18px; margin-top: 12px; min-height: 0; flex: 1; }
+.cs__body { display: grid; grid-template-columns: minmax(380px, 1.1fr) minmax(420px, 1fr); gap: 18px; margin-top: 12px; min-height: 0; flex: 1; overflow: hidden; }
 .cs__viewer { position: relative; border-radius: 8px; border: 1px solid rgba(94,242,255,0.18); background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--accent) 12%, transparent), rgba(2,5,9,0.9) 70%); overflow: hidden; min-height: 420px; }
 .cs__viewer canvas { position: absolute; inset: 0; }
 .cs__viewer-tag { position: absolute; left: 14px; background: rgba(4,10,16,0.7); border: 1px solid rgba(94,242,255,0.25); border-radius: 4px; padding: 6px 10px; backdrop-filter: blur(6px); max-width: 60%; }
@@ -196,3 +196,10 @@ select.btn { appearance: none; }
 .cs__campaign-meta { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 4px; }
 .cs__campaign-cta { position: absolute; right: 10px; top: 10px; font-size: 10px; letter-spacing: 0.2em; color: var(--accent); }
 @media (max-width: 1100px) { .cs__body { grid-template-columns: 1fr; } .cs__viewer { min-height: 300px; } }
+
+/* Pitch-deck art slots */
+.cs__armory { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 4px; }
+.cs__armory .cs__viewer { flex: 1 0 320px; }
+.cs__concept { flex: 0 0 auto; width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 25%, transparent); }
+.cs__concept--scene { max-height: 120px; }
+.cs__crew-portrait { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent); }
