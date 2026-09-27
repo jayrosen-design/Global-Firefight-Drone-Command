@@ -40,6 +40,7 @@ export interface CarrierSpec {
 }
 
 export interface CrewMember {
+  /** Rank + surname. Names are not in the pitch deck; roles follow each figure's equipment on the deck's team slide. */
   name: string;
   role: string;
   callSign: string;
@@ -52,7 +53,7 @@ export interface FleetConfig {
   agency: string;
   /** Unit motto shown on the country select screen. */
   motto: string;
-  /** Command crew for the national unit. */
+  /** Command crew, in the left-to-right order of the figures on the pitch deck team slide (portrait i → crew/(i+1).webp). */
   crew: CrewMember[];
   drone: DroneSpec;
   carrier: CarrierSpec;
@@ -72,10 +73,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'USA',
     motto: 'Hold the ridge.',
     crew: [
-      { name: 'Cmdr. Dana Ruiz', role: 'Incident Commander', callSign: 'RIDGE-ACTUAL' },
-      { name: 'Lt. Marcus Hale', role: 'Lead Drone Pilot', callSign: 'GUARDIAN-1' },
-      { name: 'Tech Sgt. Priya Nair', role: 'Thermal Systems Officer', callSign: 'IRIS' },
-      { name: 'Jordan Okafor', role: 'Retardant Loadmaster', callSign: 'PHOS' },
+      { name: 'Cmdr. Ruiz', role: 'Incident Commander', callSign: 'RIDGE-ACTUAL' },
+      { name: 'Lt. Hale', role: 'Lead Drone Pilot', callSign: 'GUARDIAN-1' },
+      { name: 'Sgt. Nair', role: 'Thermal Sensor Operator', callSign: 'IRIS' },
+      { name: 'FF Okafor', role: 'Ground Suppression Lead', callSign: 'NOZZLE' },
+      { name: 'Lt. Brooks', role: 'Carrier Flight Deck Officer', callSign: 'DECK' },
+      { name: 'Chief Kowalski', role: 'Phos-Chek Loadmaster', callSign: 'PHOS' },
     ],
     country: 'United States',
     flag: '🇺🇸',
@@ -110,10 +113,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'CAN',
     motto: 'Three drones, one line.',
     crew: [
-      { name: 'Chief Élise Tremblay', role: 'Wildfire Operations Chief', callSign: 'INCENDIE-ACTUAL' },
-      { name: 'Capt. Owen MacLeod', role: 'Swarm Lead', callSign: 'WASP-1' },
-      { name: 'Sgt. Aiyana Cardinal', role: 'Swarm Wing', callSign: 'WASP-2' },
-      { name: 'Noah Bergeron', role: 'Foam Payload Specialist', callSign: 'FOAM' },
+      { name: 'Chief Tremblay', role: 'Wildfire Operations Chief', callSign: 'INCENDIE-ACTUAL' },
+      { name: 'Capt. MacLeod', role: 'Swarm Lead Pilot', callSign: 'WASP-1' },
+      { name: 'Sgt. Bergeron', role: 'Initial Attack Crew Leader', callSign: 'IA-LEAD' },
+      { name: 'FF Lavoie', role: 'Foam Payload Specialist', callSign: 'FOAM' },
+      { name: 'Sgt. Cardinal', role: 'Swarm Coordinator', callSign: 'WASP-2' },
+      { name: 'FF Chen', role: 'Fire Behaviour Analyst', callSign: 'FBAN' },
     ],
     country: 'Canada',
     flag: '🇨🇦',
@@ -147,10 +152,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'BRA',
     motto: 'Guardians of the green.',
     crew: [
-      { name: 'Cel. Rafael Moreira', role: 'Comandante de Operações', callSign: 'ARARA-ACTUAL' },
-      { name: 'Cap. Luiza Andrade', role: 'Piloto VTOL', callSign: 'ARARA-1' },
-      { name: 'Sgt. Thiago Nascimento', role: 'Riverine Scan Officer', callSign: 'RIO' },
-      { name: 'Camila Souza', role: 'Foam Systems', callSign: 'ESPUMA' },
+      { name: 'Cel. Moreira', role: 'Comandante de Operações', callSign: 'ARARA-ACTUAL' },
+      { name: 'Cap. Andrade', role: 'Piloto VTOL', callSign: 'ARARA-1' },
+      { name: 'Sgt. Nascimento', role: 'Riverine Scan Officer', callSign: 'RIO' },
+      { name: 'Sd. Souza', role: 'Foam Systems Operator', callSign: 'ESPUMA' },
+      { name: 'Sgt. Lima', role: 'Brigade Communications', callSign: 'RADIO' },
+      { name: 'Cb. Ferreira', role: 'Forest Brigade Lead', callSign: 'BRIGADA' },
     ],
     country: 'Brazil',
     flag: '🇧🇷',
@@ -185,10 +192,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'CHN',
     motto: '城市之盾 · Shield of the city.',
     crew: [
-      { name: 'Cmdr. Wei Zhang', role: 'Air Control Commander', callSign: 'AIRCON-ACTUAL' },
-      { name: 'Capt. Mei Lin', role: 'EHang Flight Lead', callSign: '216F-1' },
-      { name: 'Lt. Jian Zhou', role: 'High-Rise Nozzle Operator', callSign: 'NOZZLE' },
-      { name: 'Hui Chen', role: 'Swarm Coordinator', callSign: 'SWARM' },
+      { name: 'Capt. Lin', role: 'EHang Flight Lead', callSign: '216F-1' },
+      { name: 'Lt. Chen', role: 'Swarm Coordinator', callSign: 'SWARM' },
+      { name: 'Cmdr. Zhang', role: 'Air Control Commander', callSign: 'AIRCON-ACTUAL' },
+      { name: 'Lt. Zhou', role: 'High-Rise Nozzle Operator', callSign: 'NOZZLE' },
+      { name: 'Sgt. Wang', role: 'Window Projectile Gunner', callSign: 'WINDOW' },
+      { name: 'Sgt. Liu', role: 'Forest Brigade Lead', callSign: 'SENLIN' },
     ],
     country: 'China',
     flag: '🇨🇳',
@@ -223,10 +232,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'DEU',
     motto: 'Retten · Löschen · Bergen · Schützen',
     crew: [
-      { name: 'BD Katharina Vogel', role: 'Einsatzleiterin', callSign: 'LEITSTELLE' },
-      { name: 'Hptm. Lukas Brandt', role: 'Drohnenführer', callSign: 'GF-CA-1' },
-      { name: 'OFw. Sofia Keller', role: 'UXO-Infrarotsweep', callSign: 'SPRENG' },
-      { name: 'Jonas Weber', role: 'Perimeter Spray Technician', callSign: 'PERIMETER' },
+      { name: 'BD Vogel', role: 'Einsatzleitung', callSign: 'LEITSTELLE' },
+      { name: 'Hptm. Brandt', role: 'Drohnenführer', callSign: 'GF-CA-1' },
+      { name: 'OFw. Keller', role: 'Perimeter Spray Technician', callSign: 'PERIMETER' },
+      { name: 'HFM Weber', role: 'Atemschutz Hose Team', callSign: 'SCHLAUCH' },
+      { name: 'Lt. Wagner', role: 'UXO Infrared Sweep', callSign: 'SPRENG' },
+      { name: 'OBM Schulz', role: 'Carrier Operator', callSign: 'TRÄGER' },
     ],
     country: 'Germany',
     flag: '🇩🇪',
@@ -260,10 +271,12 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
     code: 'AUS',
     motto: 'Prepare. Act. Survive.',
     crew: [
-      { name: 'Supt. Grace Nguyen', role: 'Incident Controller', callSign: 'KOOKA-ACTUAL' },
-      { name: 'Flt Lt. Liam Parker', role: 'Recon Pilot', callSign: 'KOOKA-1' },
-      { name: 'Sgt. Tahlia Rivers', role: 'Coastal Ferry Lead', callSign: 'FERRY' },
-      { name: 'Ben Whitlock', role: 'Retardant Systems', callSign: 'DROP' },
+      { name: 'Supt. Nguyen', role: 'Incident Controller', callSign: 'KOOKA-ACTUAL' },
+      { name: 'Flt Lt. Parker', role: 'Recon Pilot', callSign: 'KOOKA-1' },
+      { name: 'Sgt. Rivers', role: 'Coastal Ferry Pilot', callSign: 'FERRY' },
+      { name: 'FF Whitlock', role: 'Retardant Systems', callSign: 'DROP' },
+      { name: "FF O'Brien", role: 'Remote Area Firefighter', callSign: 'RAFT' },
+      { name: 'Capt. Walsh', role: 'Strike Team Leader', callSign: 'STRIKE' },
     ],
     country: 'Australia',
     flag: '🇦🇺',

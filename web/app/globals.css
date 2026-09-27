@@ -166,7 +166,7 @@ select.btn { appearance: none; }
 .cs__country { font-size: 34px; font-weight: 800; letter-spacing: 0.08em; line-height: 1.05; }
 .cs__agency { font-size: 12px; letter-spacing: 0.14em; color: var(--accent); margin-top: 4px; }
 .cs__nav { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.cs__body { display: grid; grid-template-columns: minmax(380px, 1.1fr) minmax(420px, 1fr); gap: 18px; margin-top: 12px; min-height: 0; flex: 1; overflow: hidden; }
+.cs__body { display: grid; grid-template-columns: minmax(560px, 1.45fr) minmax(360px, 1fr); gap: 18px; margin-top: 12px; min-height: 0; flex: 1; overflow: hidden; }
 .cs__viewer { position: relative; border-radius: 8px; border: 1px solid rgba(94,242,255,0.18); background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--accent) 12%, transparent), rgba(2,5,9,0.9) 70%); overflow: hidden; min-height: 420px; }
 .cs__viewer canvas { position: absolute; inset: 0; }
 .cs__viewer-tag { position: absolute; left: 14px; background: rgba(4,10,16,0.7); border: 1px solid rgba(94,242,255,0.25); border-radius: 4px; padding: 6px 10px; backdrop-filter: blur(6px); max-width: 60%; }
@@ -197,9 +197,31 @@ select.btn { appearance: none; }
 .cs__campaign-cta { position: absolute; right: 10px; top: 10px; font-size: 10px; letter-spacing: 0.2em; color: var(--accent); }
 @media (max-width: 1100px) { .cs__body { grid-template-columns: 1fr; } .cs__viewer { min-height: 300px; } }
 
-/* Pitch-deck art slots */
-.cs__armory { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 4px; }
-.cs__armory .cs__viewer { flex: 1 0 320px; }
-.cs__concept { flex: 0 0 auto; width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 25%, transparent); }
-.cs__concept--scene { max-height: 120px; }
-.cs__crew-portrait { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent); }
+
+/* Country select — pitch-deck art */
+.cs__insignia { width: 88px; height: 88px; object-fit: contain; padding: 3px; border-radius: 50%; background: radial-gradient(circle, #efe4cc 0%, #d8c6a2 70%, #b9a47c 100%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+.cs__left { display: grid; grid-template-rows: minmax(0, 1.05fr) minmax(0, 1fr); gap: 10px; min-height: 0; }
+.cs__armory-panel, .cs__lineup-panel { position: relative; border-radius: 8px; border: 1px solid rgba(255,255,255,0.14); overflow: hidden; min-height: 0;
+  background: radial-gradient(ellipse at 50% 55%, #e9dcc0 0%, #cdb993 55%, #9c8a68 100%); box-shadow: inset 0 0 60px rgba(60,40,10,0.45); }
+.cs__lineup-panel { background: radial-gradient(ellipse at 50% 40%, #e3d5b8 0%, #c6b28b 60%, #8f7d5d 100%); display: flex; flex-direction: column; }
+.cs__armory-panel .cs__viewer { position: absolute; inset: 0; min-height: 0; border: 0; border-radius: 0; background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--accent) 12%, transparent), rgba(2,5,9,0.95) 70%); }
+.cs__toggle { position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; gap: 4px; }
+.cs__toggle .btn { background: rgba(4,10,16,0.75); }
+.cs__toggle .btn--active, .cs__toggle .btn--active:hover:not(:disabled) { background: var(--cyan); color: #04121a; }
+.cs__deck { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 34px 12px 10px; }
+.cs__deck-item { margin: 0; display: flex; flex-direction: column; min-height: 0; }
+.cs__deck-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(40,25,5,0.45)); animation: csFloat 5s ease-in-out infinite; }
+.cs__deck-item:nth-child(2) .cs__deck-img { animation-delay: -2.5s; }
+@keyframes csFloat { 50% { transform: translateY(-5px); } }
+.cs__deck-item figcaption { display: flex; flex-direction: column; background: rgba(4,10,16,0.78); border: 1px solid rgba(94,242,255,0.25); border-radius: 4px; padding: 5px 9px; margin-top: 4px; }
+.cs__deck-missing { flex: 1; display: grid; place-items: center; color: #3a2a12; font-weight: 700; }
+.cs__lineup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 10px; background: rgba(4,10,16,0.78); }
+.cs__lineup-focus { font-size: 11px; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs__lineup { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(6, 1fr); align-items: end; padding: 6px 8px 0; }
+.cs__figure { position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; background: none; border: 0; cursor: pointer; padding: 0 2px 4px; transition: transform .15s; }
+.cs__figure-img { flex: 1; min-height: 0; max-width: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 6px rgba(40,25,5,0.5)); transition: filter .15s; }
+.cs__figure:hover, .cs__figure--focus { transform: translateY(-4px); }
+.cs__figure--focus .cs__figure-img { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 80%, transparent)) drop-shadow(0 6px 6px rgba(40,25,5,0.5)); }
+.cs__figure-role { font-size: 9px; line-height: 1.15; text-align: center; color: #fff; background: rgba(4,10,16,0.8); border-radius: 3px; padding: 2px 4px; margin-top: 3px; max-width: 100%; }
+.cs__figure-cs { font-size: 8px; letter-spacing: 0.14em; color: var(--accent); background: rgba(4,10,16,0.8); padding: 0 4px 1px; border-radius: 0 0 3px 3px; }
+@media (max-width: 1100px) { .cs__left { grid-template-rows: 300px 320px; } }

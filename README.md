@@ -14,7 +14,7 @@ Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170
 
 ### Screenshots
 
-| Country select — crew, armory turntable, campaigns | Global RTS — free play on the live FIRMS globe |
+| Country select — pitch-deck crew line-up, drone + carrier art, insignia | Global RTS — free play on the live FIRMS globe |
 | --- | --- |
 | ![Country select](web/docs/screenshots/01-campaign-menu.png) | ![Global RTS free play](web/docs/screenshots/02-global-rts-freeplay.png) |
 
@@ -73,16 +73,18 @@ monochrome shader; LIDAR re-renders the tile geometry as an elevation-coloured p
 
 ### Pitch-deck art on the country select screen
 
-Character portraits and concept art from the pitch deck are loaded by file convention, with graceful fallbacks when a file
-is missing (initial-letter avatars, no art strip):
+The country select screen uses artwork extracted from `Assets/Research/Global Firefight Drone Command Pitch.pdf`:
+the embedded transparent cut-outs were pulled straight from the PDF (not screenshots), trimmed and saved as WebP under
+`web/public/teams/<CODE>/`.
 
-```
-web/public/teams/<CODE>/concept.jpg           hero concept art, shown above the 3D armory turntable
-web/public/teams/<CODE>/scene.jpg             optional campaign environment frame, shown below it
-web/public/teams/<CODE>/crew/<CALLSIGN>.jpg   crew portraits (call signs are in web/lib/config/fleets.ts)
-```
+| Asset | Deck source |
+| --- | --- |
+| `drone.webp`, `carrier.webp`, `insignia.webp` | Equipment slides 17–22 (USA, CAN, BRA, DEU, CHN, AUS) |
+| `crew/1…6.webp` | Team slides 32–37, figures left to right |
 
-`<CODE>` ∈ `USA CAN BRA CHN DEU AUS`. See [`web/public/teams/README.md`](web/public/teams/README.md).
+Crew entries in `web/lib/config/fleets.ts` follow the figure order. The deck names no one, so crew names are
+placeholders and each role is inferred from the figure's equipment (VR headset → drone pilot, respirator and hose →
+suppression, tablet → comms). The screen offers a **CONCEPT ART / 3D MODEL** toggle for the armory.
 
 ### Controls
 

@@ -5,18 +5,21 @@ import { COUNTRY_CODES, FLEETS, fleetUiColor, type CountryCode } from '@/lib/con
 import { SCENARIOS } from '@/lib/config/scenarios';
 import { fmtUSD } from '@/lib/engine/economics';
 import { useGame } from '@/store/gameStore';
-import { conceptArtUrl, portraitUrl } from '@/lib/config/teamArt';
+import { carrierArtUrl, droneArtUrl, insigniaUrl, portraitUrl } from '@/lib/config/teamArt';
 import { TeamImage } from './TeamImage';
 
 const ArmoryViewer = dynamic(() => import('./ArmoryViewer').then((m) => m.ArmoryViewer), { ssr: false });
 
 /**
- * Country select: one nation showcased at a time — command crew, drone and
- * carrier armory on a 3D turntable, abilities and campaigns — with a rail of
- * small flags to switch nations (click, ←/→ keys, or number keys).
+ * Country select: one nation showcased at a time using the pitch-deck artwork —
+ * unit insignia, drone + carrier concept art (slides 17–22) and the six-person
+ * crew line-up (slides 32–37) — plus specs, abilities and campaigns. A rail of
+ * small flags switches nation (click, ←/→, 1–6; Enter launches the first campaign).
  */
 export function CountrySelect() {
   const [index, setIndex] = useState(0);
+  const [view, setView] = useState<'art' | '3d'>('art');
+  const [crewFocus, setCrewFocus] = useState<number | null>(null);
   const startScenario = useGame((s) => s.startScenario);
   const startFreePlay = useGame((s) => s.startFreePlay);
   const feedStatus = useGame((s) => s.feedStatus);
@@ -26,21 +29,27 @@ export function CountrySelect() {
   const accent = fleetUiColor(code);
   const campaigns = SCENARIOS.filter((s) => s.country === code);
 
-  const step = useCallback((d: number) => setIndex((i) => (i + d + COUNTRY_CODES.length) % COUNTRY_CODES.length), []);
+  const step = useCallback((d: number) => {
+    setCrewFocus(null);
+    setIndex((i) => (i + d + COUNTRY_CODES.length) % COUNTRY_CODES.length);
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') step(1);
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') step(-1);
-      else if (/^[1-6]$/.test(e.key)) setIndex(Number(e.key) - 1);
-      else if (e.key === 'Enter' && campaigns[0]) startScenario(campaigns[0].id);
+      else if (/^[1-6]$/.test(e.key)) {
+        setCrewFocus(null);
+        setIndex(Number(e.key) - 1);
+      } else if (e.key === 'Enter' && campaigns[0]) startScenario(campaigns[0].id);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [step, campaigns, startScenario]);
 
+  const focused = crewFocus !== null ? f.crew[crewFocus] : null;
+
   return (
     <div className="cs pointer-events-auto absolute inset-0 z-40" style={{ ['--accent' as string]: accent }}>
-      {/* Header */}
       <div className="cs__header">
         <div>
           <div className="brand__title text-2xl">GLOBAL FIREFIGHT</div>
@@ -52,10 +61,9 @@ export function CountrySelect() {
         </div>
       </div>
 
-      {/* Flag rail */}
       <nav className="cs__rail" aria-label="Nations">
         {COUNTRY_CODES.map((c, i) => (
-          <button key={c} className={`cs__flag ${i === index ? 'cs__flag--active' : ''}`} style={{ ['--accent' as string]: fleetUiColor(c) }} onClick={() => setIndex(i)} title={FLEETS[c].country}>
+          <button key={c} className={`cs__flag ${i === index ? 'cs__flag--active' : ''}`} style={{ ['--accent' as string]: fleetUiColor(c) }} onClick={() => { setCrewFocus(null); setIndex(i); }} title={FLEETS[c].country}>
             <span className="cs__flag-emoji">{FLEETS[c].flag}</span>
             <span className="cs__flag-code">{c}</span>
           </button>
@@ -66,12 +74,11 @@ export function CountrySelect() {
         </button>
       </nav>
 
-      {/* Showcase */}
       <section className="cs__stage glass" key={code}>
         <div className="cs__stage-head">
-          <div className="cs__bigflag">{f.flag}</div>
+          <TeamImage src={insigniaUrl(code)} alt={`${f.agency} insignia`} className="cs__insignia" fallback={<div className="cs__bigflag">{f.flag}</div>} />
           <div>
-            <div className="cs__country">{f.country}</div>
+            <div className="cs__country">{f.flag} {f.country}</div>
             <div className="cs__agency">{f.agency} · <span className="italic text-white/60">{f.motto}</span></div>
           </div>
           <div className="cs__nav">
@@ -82,45 +89,53 @@ export function CountrySelect() {
         </div>
 
         <div className="cs__body">
-          {/* Armory: pitch-deck concept art + 3D turntable */}
-          <div className="cs__armory">
-          <TeamImage
-            src={conceptArtUrl(code)}
-            alt={`${f.country} concept art`}
-            className="cs__concept"
-            fallback={null}
-          />
-          <div className="cs__viewer">
-            <ArmoryViewer country={code} />
-            <div className="cs__viewer-tag cs__viewer-tag--top">
-              <div className="stat__label">AIRFRAME</div>
-              <div className="cs__model">{f.drone.model}</div>
-              <div className="stat__sub">{f.drone.livery.description}</div>
+          <div className="cs__left">
+            {/* Armory: deck concept art (default) or live 3D turntable */}
+            <div className="cs__armory-panel">
+              <div className="cs__toggle">
+                <button className={`btn btn--xs ${view === 'art' ? 'btn--active' : ''}`} onClick={() => setView('art')}>CONCEPT ART</button>
+                <button className={`btn btn--xs ${view === '3d' ? 'btn--active' : ''}`} onClick={() => setView('3d')}>3D MODEL</button>
+              </div>
+              {view === 'art' ? (
+                <div className="cs__deck">
+                  <figure className="cs__deck-item">
+                    <TeamImage src={droneArtUrl(code)} alt={f.drone.model} className="cs__deck-img" fallback={<div className="cs__deck-missing">{f.drone.model}</div>} />
+                    <figcaption><span className="stat__label">DRONE</span><span className="cs__model">{f.drone.model}</span><span className="stat__sub">{f.drone.livery.description}</span></figcaption>
+                  </figure>
+                  <figure className="cs__deck-item">
+                    <TeamImage src={carrierArtUrl(code)} alt={f.carrier.model} className="cs__deck-img" fallback={<div className="cs__deck-missing">{f.carrier.model}</div>} />
+                    <figcaption><span className="stat__label">MOBILE COMMAND CARRIER</span><span className="cs__model">{f.carrier.model}</span><span className="stat__sub">{f.carrier.description} · {f.carrier.droneCapacity} drones · rearm {f.carrier.rearmSeconds}s</span></figcaption>
+                  </figure>
+                </div>
+              ) : (
+                <div className="cs__viewer">
+                  <ArmoryViewer country={code} />
+                </div>
+              )}
             </div>
-            <div className="cs__viewer-tag cs__viewer-tag--bottom">
-              <div className="stat__label">MOBILE COMMAND CARRIER</div>
-              <div className="cs__model">{f.carrier.model}</div>
-              <div className="stat__sub">{f.carrier.description} · {f.carrier.droneCapacity} drones · rearm {f.carrier.rearmSeconds}s</div>
+
+            {/* Crew line-up from the team slide */}
+            <div className="cs__lineup-panel">
+              <div className="cs__lineup-head">
+                <div className="panel__title">COMMAND CREW · {f.agency}</div>
+                <div className="cs__lineup-focus">
+                  {focused ? (<><b>{focused.name}</b> · {focused.role} · <span className="cs__crew-cs">{focused.callSign}</span></>) : <span className="text-white/40">Hover a crew member</span>}
+                </div>
+              </div>
+              <div className="cs__lineup" onMouseLeave={() => setCrewFocus(null)}>
+                {f.crew.map((m, i) => (
+                  <button key={m.callSign} className={`cs__figure ${crewFocus === i ? 'cs__figure--focus' : ''}`} onMouseEnter={() => setCrewFocus(i)} onFocus={() => setCrewFocus(i)} title={`${m.name} — ${m.role}`}>
+                    <TeamImage src={portraitUrl(code, i)} alt={`${m.name}, ${m.role}`} className="cs__figure-img" fallback={<span className="cs__crew-avatar">{m.name.split(' ').slice(-1)[0][0]}</span>} />
+                    <span className="cs__figure-role">{m.role}</span>
+                    <span className="cs__figure-cs">{m.callSign}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <TeamImage src={conceptArtUrl(code, 'scene')} alt={`${f.country} campaign concept`} className="cs__concept cs__concept--scene" fallback={null} />
           </div>
 
-          {/* Right column: crew, specs, abilities, campaigns */}
           <div className="cs__info">
-            <div className="panel__title">COMMAND CREW</div>
-            <ul className="cs__crew">
-              {f.crew.map((m) => (
-                <li key={m.callSign} className="cs__crew-row">
-                  <TeamImage src={portraitUrl(code, m)} alt={m.name} className="cs__crew-portrait" fallback={<span className="cs__crew-avatar" aria-hidden>{m.name.split(' ').slice(-1)[0][0]}</span>} />
-                  <span className="cs__crew-name">{m.name}</span>
-                  <span className="cs__crew-role">{m.role}</span>
-                  <span className="cs__crew-cs">{m.callSign}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="panel__title mt-3">ARMORY SPECS</div>
+            <div className="panel__title">ARMORY SPECS</div>
             <div className="cs__specs">
               <Spec k="PAYLOAD" v={`${f.drone.payloadLitres} L ${f.drone.suppressant}`} />
               <Spec k="CRUISE" v={`${f.drone.cruiseKmh} km/h`} />
