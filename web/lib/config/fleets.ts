@@ -39,11 +39,21 @@ export interface CarrierSpec {
   rearmSeconds: number;
 }
 
+export interface CrewMember {
+  name: string;
+  role: string;
+  callSign: string;
+}
+
 export interface FleetConfig {
   code: CountryCode;
   country: string;
   flag: string;
   agency: string;
+  /** Unit motto shown on the country select screen. */
+  motto: string;
+  /** Command crew for the national unit. */
+  crew: CrewMember[];
   drone: DroneSpec;
   carrier: CarrierSpec;
   /** Default regional base (lat, lon, label) */
@@ -60,6 +70,13 @@ export const SUPPRESSANT_EFFECTIVENESS: Record<SuppressantType, number> = {
 export const FLEETS: Record<CountryCode, FleetConfig> = {
   USA: {
     code: 'USA',
+    motto: 'Hold the ridge.',
+    crew: [
+      { name: 'Cmdr. Dana Ruiz', role: 'Incident Commander', callSign: 'RIDGE-ACTUAL' },
+      { name: 'Lt. Marcus Hale', role: 'Lead Drone Pilot', callSign: 'GUARDIAN-1' },
+      { name: 'Tech Sgt. Priya Nair', role: 'Thermal Systems Officer', callSign: 'IRIS' },
+      { name: 'Jordan Okafor', role: 'Retardant Loadmaster', callSign: 'PHOS' },
+    ],
     country: 'United States',
     flag: '🇺🇸',
     agency: 'USFS / CAL FIRE',
@@ -91,6 +108,13 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
   },
   CAN: {
     code: 'CAN',
+    motto: 'Three drones, one line.',
+    crew: [
+      { name: 'Chief Élise Tremblay', role: 'Wildfire Operations Chief', callSign: 'INCENDIE-ACTUAL' },
+      { name: 'Capt. Owen MacLeod', role: 'Swarm Lead', callSign: 'WASP-1' },
+      { name: 'Sgt. Aiyana Cardinal', role: 'Swarm Wing', callSign: 'WASP-2' },
+      { name: 'Noah Bergeron', role: 'Foam Payload Specialist', callSign: 'FOAM' },
+    ],
     country: 'Canada',
     flag: '🇨🇦',
     agency: 'BC Wildfire Service',
@@ -121,6 +145,13 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
   },
   BRA: {
     code: 'BRA',
+    motto: 'Guardians of the green.',
+    crew: [
+      { name: 'Cel. Rafael Moreira', role: 'Comandante de Operações', callSign: 'ARARA-ACTUAL' },
+      { name: 'Cap. Luiza Andrade', role: 'Piloto VTOL', callSign: 'ARARA-1' },
+      { name: 'Sgt. Thiago Nascimento', role: 'Riverine Scan Officer', callSign: 'RIO' },
+      { name: 'Camila Souza', role: 'Foam Systems', callSign: 'ESPUMA' },
+    ],
     country: 'Brazil',
     flag: '🇧🇷',
     agency: 'Corpo de Bombeiros / CBMGO',
@@ -152,6 +183,13 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
   },
   CHN: {
     code: 'CHN',
+    motto: '城市之盾 · Shield of the city.',
+    crew: [
+      { name: 'Cmdr. Wei Zhang', role: 'Air Control Commander', callSign: 'AIRCON-ACTUAL' },
+      { name: 'Capt. Mei Lin', role: 'EHang Flight Lead', callSign: '216F-1' },
+      { name: 'Lt. Jian Zhou', role: 'High-Rise Nozzle Operator', callSign: 'NOZZLE' },
+      { name: 'Hui Chen', role: 'Swarm Coordinator', callSign: 'SWARM' },
+    ],
     country: 'China',
     flag: '🇨🇳',
     agency: 'CN Fire / EHang',
@@ -183,6 +221,13 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
   },
   DEU: {
     code: 'DEU',
+    motto: 'Retten · Löschen · Bergen · Schützen',
+    crew: [
+      { name: 'BD Katharina Vogel', role: 'Einsatzleiterin', callSign: 'LEITSTELLE' },
+      { name: 'Hptm. Lukas Brandt', role: 'Drohnenführer', callSign: 'GF-CA-1' },
+      { name: 'OFw. Sofia Keller', role: 'UXO-Infrarotsweep', callSign: 'SPRENG' },
+      { name: 'Jonas Weber', role: 'Perimeter Spray Technician', callSign: 'PERIMETER' },
+    ],
     country: 'Germany',
     flag: '🇩🇪',
     agency: 'Feuerwehr',
@@ -213,6 +258,13 @@ export const FLEETS: Record<CountryCode, FleetConfig> = {
   },
   AUS: {
     code: 'AUS',
+    motto: 'Prepare. Act. Survive.',
+    crew: [
+      { name: 'Supt. Grace Nguyen', role: 'Incident Controller', callSign: 'KOOKA-ACTUAL' },
+      { name: 'Flt Lt. Liam Parker', role: 'Recon Pilot', callSign: 'KOOKA-1' },
+      { name: 'Sgt. Tahlia Rivers', role: 'Coastal Ferry Lead', callSign: 'FERRY' },
+      { name: 'Ben Whitlock', role: 'Retardant Systems', callSign: 'DROP' },
+    ],
     country: 'Australia',
     flag: '🇦🇺',
     agency: 'NSW RFS',

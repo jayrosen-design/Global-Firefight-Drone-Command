@@ -6,7 +6,7 @@ import { useTelemetry } from '@/store/telemetryStore';
 import { TopBar } from './hud/TopBar';
 import { BottomBar } from './hud/BottomBar';
 import { MissionLog } from './hud/MissionLog';
-import { ScenarioMenu } from './hud/ScenarioMenu';
+import { CountrySelect } from './hud/CountrySelect';
 import { Debrief } from './hud/Debrief';
 import { TacticalHUD } from './hud/TacticalHUD';
 
@@ -39,7 +39,7 @@ export function CommandCenter() {
           <TacticalHUD />
         </>
       )}
-      {mode === 'menu' && <ScenarioMenu />}
+      {mode === 'menu' && <CountrySelect />}
       {mode === 'debrief' && <Debrief />}
     </main>
   );

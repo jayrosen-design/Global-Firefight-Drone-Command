@@ -14,9 +14,9 @@ Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170
 
 ### Screenshots
 
-| Campaign menu | Global RTS — free play on the live FIRMS globe |
+| Country select — crew, armory turntable, campaigns | Global RTS — free play on the live FIRMS globe |
 | --- | --- |
-| ![Campaign menu](web/docs/screenshots/01-campaign-menu.png) | ![Global RTS free play](web/docs/screenshots/02-global-rts-freeplay.png) |
+| ![Country select](web/docs/screenshots/01-campaign-menu.png) | ![Global RTS free play](web/docs/screenshots/02-global-rts-freeplay.png) |
 
 | RTS dispatch — Black Summer, arc trajectory + carrier | Tactical drone view — standard colour |
 | --- | --- |
@@ -361,7 +361,7 @@ classDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> menu : CommandCenter mounts · loadFeed()
-  menu --> rts : startScenario(id) / startFreePlay()
+  menu --> rts : startScenario(id) / startFreePlay()<br/>(CountrySelect — ←/→ or flag rail switches nation)
   rts --> tactical : enterTactical(droneId)  [drone airborne]
   tactical --> rts : exitTactical() · ESC · drone recovered
   rts --> debrief : endMission()
@@ -549,7 +549,7 @@ components/globe/         God Eye globe adapter: Globe, TileBasemap, instanced F
 components/tactical/      Tactical arena: terrain + LIDAR cloud, flame/smoke particles,
                           structures, civilians, player DroneController
 components/models/        Procedural drone & 6x6 carrier models per livery
-components/hud/           TopBar, BottomBar, MissionLog, ScenarioMenu, TacticalHUD, Debrief
+components/hud/           TopBar, BottomBar, MissionLog, CountrySelect + ArmoryViewer, TacticalHUD, Debrief
 ```
 
 #### Economic model
