@@ -52,11 +52,22 @@ Captured from a scripted headless Chromium run against the bundled fallback data
 cd web
 npm install
 cp .env.example .env.local   # optional — see below
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000 (landing page) · /play (game)
 ```
 
 Without a FIRMS key the app uses a bundled fallback fire dataset so it always runs. For live data set
 `FIRMS_MAP_KEY` (free key: https://firms.modaps.eosdis.nasa.gov/api/map_key/). EONET needs no key.
+
+### Landing page
+
+`/` is a marketing landing page laid out like a game manual. It opens with the trailer above the fold and has **PLAY DEMO**
+(→ `/play`) and **WISHLIST ON STEAM** buttons. The body walks through six manual chapters (nation select, the globe,
+dispatch, split view, piloting, debrief), each with a short looping gameplay clip or screenshot. It closes with every
+nation's fleet and every campaign (rendered from the same config as the game), a controls reference and a final call to
+action. Media lives in `web/public/media/`, each clip as WebM (VP9) plus an MP4 fallback.
+
+Set `NEXT_PUBLIC_STEAM_URL` to the game's Steam store page. Until it is set, the wishlist buttons open a Steam store
+search for the title, and the closing section says "Steam page coming soon".
 
 ### Real-world 3D map (God Eye map stack)
 

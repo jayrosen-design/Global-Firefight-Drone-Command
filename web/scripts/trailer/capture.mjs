@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 // Requires playwright-core and a Chromium (CHROMIUM_PATH). Frames land in scripts/trailer/frames;
 // encode with: ffmpeg -framerate 24 -i frames/f%05d.jpg -c:v libx264 -crf 20 -pix_fmt yuv420p trailer.mp4
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BASE = process.argv[2] ?? 'http://localhost:3002/';
+const BASE = process.argv[2] ?? 'http://localhost:3002/play';
 
 const FPS = 24, W = 1280, H = 720;
 const OUT = path.join(HERE, 'frames');
