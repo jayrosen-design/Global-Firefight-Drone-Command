@@ -24,6 +24,22 @@ export interface CameraRequest {
   nonce: number;
 }
 
+/** A live side-window view of a point on the globe (max MAX_FEEDS open). */
+export interface LiveFeed {
+  id: string;
+  lat: number;
+  lon: number;
+  label: string;
+  /** Fire the feed was opened on, if any. */
+  fireId?: string;
+  openedAt: number;
+}
+
+export const MAX_FEEDS = 4;
+/** Clicking within this distance of an open feed re-uses it instead of opening another. */
+const FEED_DEDUPE_KM = 12;
+let feedSeq = 0;
+
 export interface LogEntry {
   t: number;
   text: string;
@@ -57,7 +73,13 @@ interface GameState {
   showLiveFeed: boolean;
   /** MOVE order armed: next globe click relocates the selected carrier. */
   moveArmed: boolean;
+  feeds: LiveFeed[];
+  /** Feed most recently opened or re-focused (briefly highlighted). */
+  activeFeedId: string | null;
 
+  openFeed: (ll: LatLon, opts?: { fireId?: string; label?: string }) => void;
+  closeFeed: (id: string) => void;
+  closeAllFeeds: () => void;
   setMoveArmed: (v: boolean) => void;
   loadFeed: () => Promise<void>;
   startScenario: (id: string) => void;
@@ -112,6 +134,34 @@ export const useGame = create<GameState>((set, get) => ({
   windDirectionDeg: 270,
   showLiveFeed: true,
   moveArmed: false,
+  feeds: [],
+  activeFeedId: null,
+
+  openFeed: (ll, opts = {}) => {
+    const s = get();
+    const near = s.feeds.find((f) => haversineKm(f, ll) < FEED_DEDUPE_KM);
+    if (near) {
+      set({ activeFeedId: near.id });
+      return;
+    }
+    const feed: LiveFeed = {
+      id: `feed-${++feedSeq}`,
+      lat: ll.lat,
+      lon: ll.lon,
+      label: opts.label ?? feedLabel(s, ll, opts.fireId),
+      fireId: opts.fireId,
+      openedAt: s.simTime,
+    };
+    let feeds = [...s.feeds, feed];
+    if (feeds.length > MAX_FEEDS) {
+      const [dropped, ...rest] = feeds;
+      feeds = rest;
+      get().pushLog(`Feed "${dropped.label}" closed — ${MAX_FEEDS} live feeds max.`, 'info');
+    }
+    set({ feeds, activeFeedId: feed.id });
+  },
+  closeFeed: (id) => set((s) => ({ feeds: s.feeds.filter((f) => f.id !== id), activeFeedId: s.activeFeedId === id ? null : s.activeFeedId })),
+  closeAllFeeds: () => set({ feeds: [], activeFeedId: null }),
 
   setMoveArmed: (moveArmed) => set({ moveArmed }),
 
@@ -155,6 +205,8 @@ export const useGame = create<GameState>((set, get) => ({
     const carrier = createCarrier(s.country, s.carrier.lat, s.carrier.lon, `${FLEETS[s.country].carrier.model} — ${s.carrier.label}`);
     set({
       mode: 'rts',
+      feeds: [],
+      activeFeedId: null,
       scenario: s,
       fires: createScenarioFires(s),
       carriers: [carrier],
@@ -180,6 +232,8 @@ export const useGame = create<GameState>((set, get) => ({
     const carriers = COUNTRY_CODES.map((c) => createCarrier(c, FLEETS[c].base.lat, FLEETS[c].base.lon, `${FLEETS[c].carrier.model} — ${FLEETS[c].base.label}`));
     set({
       mode: 'rts',
+      feeds: [],
+      activeFeedId: null,
       scenario: null,
       fires: [],
       carriers,
@@ -200,7 +254,7 @@ export const useGame = create<GameState>((set, get) => ({
     get().pushLog('Global free play. Six national carriers are staged at their home bases. Click any live hotspot to engage it.', 'info');
   },
 
-  backToMenu: () => set({ mode: 'menu', selection: null, placingCarrier: null, tacticalDroneId: null }),
+  backToMenu: () => set({ mode: 'menu', selection: null, placingCarrier: null, tacticalDroneId: null, feeds: [], activeFeedId: null }),
 
   select: (selection) => set({ selection, placingCarrier: null, moveArmed: false }),
   setHoverFire: (hoverFireId) => set({ hoverFireId }),
@@ -420,3 +474,22 @@ function creditExtinguish(fire: Fire, ledger: Ledger, log: (text: string, kind?:
 }
 
 export const selectFleet = (c: CountryCode) => FLEETS[c];
+
+/** Human label for a feed: the fire it was opened on, a nearby named fire / EONET event / campaign, else coordinates. */
+function feedLabel(s: GameState, ll: LatLon, fireId?: string): string {
+  const fire = fireId ? s.fires.find((f) => f.id === fireId) : undefined;
+  if (fire?.label) return fire.label;
+  const named = s.fires
+    .filter((f) => f.label && haversineKm(f, ll) < 20)
+    .sort((a, b) => haversineKm(a, ll) - haversineKm(b, ll))[0];
+  if (named?.label) {
+    const km = haversineKm(named, ll);
+    return km < 1 ? named.label : `${fire ? 'Fire' : 'Sector'} ${km.toFixed(0)} km from ${named.label}`;
+  }
+  const ev = s.feed?.events.find((e) => haversineKm({ lat: e.latitude, lon: e.longitude }, ll) < 60);
+  if (ev) return ev.title;
+  if (s.scenario && haversineKm(s.scenario.center, ll) < 60) return `${s.scenario.location}`;
+  const ns = ll.lat >= 0 ? 'N' : 'S';
+  const ew = ll.lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(ll.lat).toFixed(2)}°${ns} ${Math.abs(ll.lon).toFixed(2)}°${ew}`;
+}

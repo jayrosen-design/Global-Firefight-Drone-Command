@@ -7,6 +7,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { latLonToVector3, surfaceFrame } from '@/lib/geo/wgs84';
 import { intensity, type Fire } from '@/lib/engine/fire';
 import { useGame } from '@/store/gameStore';
+import { isDrag } from '@/lib/geo/clicks';
 import { useGlobeTiles } from '@/lib/tiles/TilesContext';
 import { SurfaceTracker } from '@/lib/tiles/surface';
 import { FLEETS } from '@/lib/config/fleets';
@@ -54,9 +55,11 @@ function FireEntity({ fire }: { fire: Fire }) {
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (isDrag(e)) return;
     const st = useGame.getState();
     if (st.selection?.type === 'carrier' && !fire.extinguished) st.dispatch(st.selection.id, fire.id);
     else select({ type: 'fire', id: fire.id });
+    st.openFeed({ lat: fire.lat, lon: fire.lon }, { fireId: fire.id });
   };
 
   const scale = 0.001;

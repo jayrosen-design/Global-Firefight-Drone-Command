@@ -6,6 +6,7 @@ import { GLOBE_RADIUS, vector3ToLatLon } from '@/lib/geo/wgs84';
 import { buildEarthTexture } from '@/lib/geo/earthTexture';
 import { useGame } from '@/store/gameStore';
 import { TileBasemap } from './TileBasemap';
+import { isDrag } from '@/lib/geo/clicks';
 
 const ATMO_VERT = /* glsl */ `
 varying vec3 vNormal;
@@ -48,6 +49,7 @@ export function Globe({ tilesActive = false }: { tilesActive?: boolean }) {
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (isDrag(e)) return;
     const st = useGame.getState();
     // With streamed tiles the pick point comes from the sunken fallback sphere; re-intersect at the true radius.
     const p = hitSphere(e.ray, GLOBE_RADIUS + 0.0005, new Vector3()) ?? e.point;
@@ -59,6 +61,8 @@ export function Globe({ tilesActive = false }: { tilesActive?: boolean }) {
       return;
     }
     if (st.selection) st.select(null);
+    // Any other click on the globe opens a live feed of that point.
+    st.openFeed(ll);
   };
 
   return (

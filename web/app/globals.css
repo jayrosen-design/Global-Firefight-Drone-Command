@@ -225,3 +225,30 @@ select.btn { appearance: none; }
 .cs__figure-role { font-size: 9px; line-height: 1.15; text-align: center; color: #fff; background: rgba(4,10,16,0.8); border-radius: 3px; padding: 2px 4px; margin-top: 3px; max-width: 100%; }
 .cs__figure-cs { font-size: 8px; letter-spacing: 0.14em; color: var(--accent); background: rgba(4,10,16,0.8); padding: 0 4px 1px; border-radius: 0 0 3px 3px; }
 @media (max-width: 1100px) { .cs__left { grid-template-rows: 300px 320px; } }
+
+/* Split view: globe (primary, always live) + up to 4 live feed windows */
+:root { --feeds-w: clamp(380px, 34vw, 640px); }
+.globe-area { position: absolute; top: 0; bottom: 0; left: 0; right: 0; transition: right .25s ease; }
+.globe-area--split { right: var(--feeds-w); }
+.globe-area--split::after { content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 1px; background: linear-gradient(transparent, rgba(94,242,255,0.45), transparent); pointer-events: none; }
+.feeds { position: absolute; z-index: 25; top: 96px; bottom: 12px; right: 12px; width: calc(var(--feeds-w) - 24px); display: flex; flex-direction: column; gap: 8px; animation: feedsIn .25s ease-out; }
+@keyframes feedsIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.feeds__bar { display: flex; align-items: center; gap: 10px; padding: 0 2px; }
+.feeds__bar .stat__sub { flex: 1; }
+.feeds__list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.feed { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0; transition: box-shadow .3s; }
+.feed--active { box-shadow: 0 0 0 1px var(--cyan), 0 0 24px rgba(94,242,255,0.35); }
+.feed__head { display: flex; align-items: center; gap: 8px; padding: 4px 8px; font-size: 11px; border-bottom: 1px solid rgba(94,242,255,0.18); background: rgba(4,10,16,0.85); }
+.feed__slot { font-weight: 800; letter-spacing: 0.16em; color: #04121a; background: var(--cyan); padding: 1px 6px; border-radius: 2px; font-size: 10px; }
+.feed__title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; letter-spacing: 0.04em; }
+.feed__live { color: #ff5a5a; font-size: 9px; letter-spacing: 0.2em; animation: blink 1.4s steps(2) infinite; }
+.feed__btn { border: 1px solid rgba(94,242,255,0.3); background: rgba(94,242,255,0.06); color: #dffbff; width: 22px; height: 20px; border-radius: 3px; line-height: 1; cursor: pointer; }
+.feed__btn:hover { background: rgba(94,242,255,0.2); }
+.feed__view { position: relative; flex: 1; min-height: 0; }
+.feed__view canvas { position: absolute; inset: 0; }
+.feed__stats { position: absolute; left: 6px; bottom: 6px; max-width: calc(100% - 150px); display: flex; flex-wrap: wrap; gap: 4px; pointer-events: none; }
+.feed__stats span { font-size: 9px; letter-spacing: 0.08em; background: rgba(4,10,16,0.72); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; padding: 1px 5px; color: rgba(255,255,255,0.85); }
+.feed__pilot { position: absolute; right: 6px; bottom: 6px; font-size: 10px; letter-spacing: 0.12em; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--cyan); background: rgba(4,10,16,0.8); color: #dffbff; cursor: pointer; }
+.feed__pilot:hover { background: rgba(94,242,255,0.25); }
+.hud-label--feed { border-color: var(--cyan); color: #04121a; background: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: 0.16em; padding: 1px 6px; }
+.feed__view .hud-label { transform: scale(0.72); transform-origin: center bottom; }

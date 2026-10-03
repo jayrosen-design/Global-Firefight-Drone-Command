@@ -6,6 +6,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { frpToIntensity, hotspotToVector3 } from '@/lib/data/nasa-firms';
 import type { FirmsHotspot } from '@/lib/data/types';
 import { useGame } from '@/store/gameStore';
+import { isDrag } from '@/lib/geo/clicks';
 
 /**
  * Instanced fire shader: one camera-facing quad per FIRMS hotspot. Quad size,
@@ -109,10 +110,12 @@ export function FireLayer({ hotspots }: { hotspots: FirmsHotspot[] }) {
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.instanceId === undefined) return;
     e.stopPropagation();
+    if (isDrag(e)) return;
     const st = useGame.getState();
     const fire = st.engageHotspot(hotspots[e.instanceId]);
     if (st.selection?.type === 'carrier') st.dispatch(st.selection.id, fire.id);
     else st.select({ type: 'fire', id: fire.id });
+    st.openFeed({ lat: fire.lat, lon: fire.lon }, { fireId: fire.id });
   };
   const onOver = (e: ThreeEvent<PointerEvent>) => {
     if (e.instanceId === undefined) return;

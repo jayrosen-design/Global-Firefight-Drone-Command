@@ -30,6 +30,10 @@ Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170
 | --- | --- |
 | ![Tactical LIDAR](web/docs/screenshots/07-tactical-lidar.png) | ![Mission debrief](web/docs/screenshots/08-mission-debrief.png) |
 
+| Split view — globe stays live with up to 4 live feeds of clicked points |
+| --- |
+| ![Split view](web/docs/screenshots/09-split-view-feeds.png) |
+
 Captured from a scripted headless Chromium run against the bundled fallback dataset (no FIRMS key configured).
 
 ### Run
@@ -95,6 +99,20 @@ suppression, tablet → comms). The screen offers a **CONCEPT ART / 3D MODEL** t
 | Click a live FIRMS hotspot to engage it | `R` (hold, < 30 m AGL, within 40 m) extract a civilian |
 | `MOVE` then click globe relocates a carrier | `V` cycle Standard / IR White-Hot / LIDAR |
 | Fleet panel → click a nation, then the globe, to deploy a forward carrier | `ESC` back to the global view |
+
+#### Split view: live feeds
+
+Click any point on the globe (bare ground, a FIRMS hotspot, a campaign fire or an EONET beacon) to open a **live
+feed** window on the right. The globe shrinks to the larger left pane and keeps running the game; feeds are read-only
+spectator views of the same simulation.
+
+- Up to **4 feeds** at once; opening a 5th closes the oldest. Clicking within 12 km of an open feed re-focuses it.
+- Each feed renders that location in 3D (real-world tiles with a Google / ion key, procedural terrain otherwise) with
+  its fires, protected structures and carriers, drones flying in on their real great-circle path, orbiting on station
+  and dropping suppressant. Drag to orbit, scroll to zoom.
+- Window controls: **◎** centres the globe on the feed, **✕** closes it, **PILOT** takes manual control of a drone
+  working that area (tactical view), **CLOSE ALL** clears the column. Numbered markers on the globe match the windows.
+- Dragging the globe never opens a feed (clicks that move more than 5 px are treated as orbit drags).
 
 ### Software architecture
 
@@ -212,6 +230,7 @@ flowchart TB
   GS --> GL
   GS --> TL
   GS --> HUD
+  GB -- "click → openFeed" --> GS
   DCT --> TS --> THUD
   DCT -- "tacticalDrop · rescueCivilian" --> GS
   MD --> CR
@@ -552,6 +571,9 @@ lib/config/tiles.ts       Map route selection (google-direct / google-ion / keyl
 lib/tiles/                DRACO + BVH setup, globe surface sampler, vision-mode tile materials
 components/tiles/         WorldTiles — 3d-tiles-renderer wrapper for both views (auth, terrain, imagery, attribution)
 components/tactical/TacticalWorld.tsx  Terrain provider: reoriented tiles or procedural fallback
+components/tactical/useLocalPlacements.ts  Projects nearby fires/structures into a local arena (tactical view + feeds)
+components/feeds/         Split-view live feeds: FeedPanel (≤4 windows), FeedView (3D spectator scene)
+components/globe/FeedMarkers.tsx  Numbered globe markers for open feeds
 lib/data/nasa-firms.ts    CSV parser, FRP → intensity, hotspot → Vector3
 lib/data/nasa-eonet.ts    GeoJSON parser (title / geometry / link)
 lib/data/fallback-fires.ts Offline dataset

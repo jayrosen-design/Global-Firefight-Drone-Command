@@ -1,17 +1,18 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGame } from '@/store/gameStore';
 import { useTelemetry } from '@/store/telemetryStore';
-import { haversineKm, type LatLon } from '@/lib/geo/wgs84';
+import type { LatLon } from '@/lib/geo/wgs84';
 import type { Fire } from '@/lib/engine/fire';
 import type { Scenario } from '@/lib/config/scenarios';
 import { Terrain, Trees, useTerrainGeometry } from './Terrain';
-import { TacticalFires, type LocalFire } from './TacticalFires';
-import { Structures, type LocalStructure } from './Structures';
+import { TacticalFires } from './TacticalFires';
+import { Structures } from './Structures';
 import { Civilians, type Civilian } from './Civilians';
 import { DroneController } from './DroneController';
 import { TacticalWorld, useTacticalTerrain } from './TacticalWorld';
+import { useLocalPlacements } from './useLocalPlacements';
 
 function Simulation() {
   const tick = useGame((s) => s.tick);
@@ -20,7 +21,7 @@ function Simulation() {
 }
 
 /** Procedural terrain fallback (only when no map route is configured). */
-function ProceduralGround({ seed, vision }: { seed: number; vision: 'standard' | 'ir' | 'lidar' }) {
+export function ProceduralGround({ seed, vision }: { seed: number; vision: 'standard' | 'ir' | 'lidar' }) {
   const geometry = useTerrainGeometry(seed);
   return (
     <>
@@ -41,39 +42,7 @@ function TacticalContent({ origin, seed, scenario, allFires, droneId }: { origin
   const windDeg = useGame((s) => s.windDirectionDeg);
   const tacticalDrop = useGame((s) => s.tacticalDrop);
   const drone = useGame((s) => s.drones.find((d) => d.id === droneId));
-  const rangeKm = terrain.real ? 25 : 30;
-
-  const nearby = useMemo(
-    () => allFires.filter((f) => haversineKm(origin, { lat: f.lat, lon: f.lon }) < rangeKm).sort((a, b) => haversineKm(origin, a) - haversineKm(origin, b)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [origin, rangeKm, allFires.length, allFires.map((f) => f.extinguished).join()],
-  );
-
-  const place = () =>
-    nearby.map<LocalFire>((f) => {
-      const v = terrain.project({ lat: f.lat, lon: f.lon });
-      return { fire: f, x: v.x, y: v.y, z: v.z };
-    });
-  const [fires, setFires] = useState<LocalFire[]>(place);
-  const [structures, setStructures] = useState<LocalStructure[]>([]);
-  const nextSettle = useRef(0);
-
-  // Re-settle placements periodically while tiles stream (heights change as LOD refines).
-  useFrame(({ clock }) => {
-    if (clock.elapsedTime < nextSettle.current) return;
-    nextSettle.current = clock.elapsedTime + (terrain.real ? 1.5 : 30);
-    const next = place();
-    if (next.length !== fires.length || next.some((n, i) => Math.abs(n.y - fires[i].y) > 0.5 || n.fire.id !== fires[i].fire.id)) setFires(next);
-    if (scenario) {
-      const s = scenario.objectives
-        .filter((o) => o.protect)
-        .map<LocalStructure>((o) => {
-          const v = terrain.project({ lat: o.protect!.lat, lon: o.protect!.lon });
-          return { id: o.id, label: o.protect!.label, x: v.x, y: v.y, z: v.z, valueUSD: o.protect!.valueUSD, critical: true };
-        });
-      if (s.length !== structures.length || s.some((n, i) => Math.abs(n.y - structures[i].y) > 0.5)) setStructures(s);
-    }
-  });
+  const { fires, structures } = useLocalPlacements(origin, scenario, allFires);
 
   const [civilians, setCivilians] = useState<Civilian[]>([]);
   useEffect(() => {

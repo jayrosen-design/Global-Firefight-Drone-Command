@@ -45,7 +45,23 @@ const ecef = new Vector3();
  * streams the same real-world tiles as the globe, reoriented so `origin` is
  * at (0,0,0) with +Y up; otherwise it falls back to the procedural heightmap.
  */
-export function TacticalWorld({ origin, seed, vision, children }: { origin: LatLon; seed: number; vision: VisionMode; children: React.ReactNode }) {
+export function TacticalWorld({
+  origin,
+  seed,
+  vision,
+  errorTarget,
+  reportStatus = true,
+  children,
+}: {
+  origin: LatLon;
+  seed: number;
+  vision: VisionMode;
+  /** Tile LOD error target; feed windows use a coarser value. */
+  errorTarget?: number;
+  /** Publish map status to the tactical HUD (off for feed windows). */
+  reportStatus?: boolean;
+  children: React.ReactNode;
+}) {
   const [tiles, setTiles] = useState<TilesRendererImpl | null>(null);
   const [status, setStatus] = useState<TilesStatus>(HAS_TACTICAL_TILES ? 'loading' : 'failed');
   const cache = useRef(new Map<string, number>());
@@ -54,8 +70,8 @@ export function TacticalWorld({ origin, seed, vision, children }: { origin: LatL
 
   useEffect(() => {
     if (status === 'ready' && tiles) tiles.group.updateMatrixWorld(true);
-    useTelemetry.getState().set({ mapStatus: HAS_TACTICAL_TILES ? status : 'off' });
-  }, [status, tiles]);
+    if (reportStatus) useTelemetry.getState().set({ mapStatus: HAS_TACTICAL_TILES ? status : 'off' });
+  }, [status, tiles, reportStatus]);
 
   const terrain = useMemo<TacticalTerrain>(() => {
     if (!useReal) {
@@ -115,7 +131,7 @@ export function TacticalWorld({ origin, seed, vision, children }: { origin: LatL
 
   return (
     <TacticalTerrainContext.Provider value={terrain}>
-      {useReal && <WorldTiles mode="tactical" origin={origin} vision={vision} onTiles={setTiles} onStatus={setStatus} errorTarget={vision === 'lidar' ? 16 : 8} />}
+      {useReal && <WorldTiles mode="tactical" origin={origin} vision={vision} onTiles={setTiles} onStatus={setStatus} errorTarget={errorTarget ?? (vision === 'lidar' ? 16 : 8)} />}
       {children}
     </TacticalTerrainContext.Provider>
   );

@@ -15,6 +15,7 @@ import { Carriers } from './Carriers';
 import { Drones } from './Drones';
 import { Trajectories } from './Trajectories';
 import { CameraRig } from './CameraRig';
+import { FeedMarkers } from './FeedMarkers';
 
 /** Drives the simulation clock from the render loop. */
 function Simulation() {
@@ -61,6 +62,7 @@ export function GlobeScene() {
           <Trajectories />
           <Carriers />
           <Drones />
+          <FeedMarkers />
         </Suspense>
       </GlobeTilesContext.Provider>
       <CameraRig />

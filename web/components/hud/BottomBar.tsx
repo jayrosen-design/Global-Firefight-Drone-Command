@@ -4,7 +4,7 @@ import { FLEETS, COUNTRY_CODES, fleetUiColor } from '@/lib/config/fleets';
 import { fmtUSD } from '@/lib/engine/economics';
 import { intensity } from '@/lib/engine/fire';
 
-export function BottomBar() {
+export function BottomBar({ compact = false }: { compact?: boolean }) {
   const selection = useGame((s) => s.selection);
   const carriers = useGame((s) => s.carriers);
   const fires = useGame((s) => s.fires);
@@ -23,7 +23,7 @@ export function BottomBar() {
   return (
     <footer className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 flex items-end gap-2 p-3">
       {/* Selected unit */}
-      <div className="glass min-w-[340px] max-w-[460px] px-4 py-3">
+      <div className={`glass px-4 py-3 ${compact ? 'min-w-[300px] max-w-[360px]' : 'min-w-[340px] max-w-[460px]'}`}>
         {carrier && (() => {
           const f = FLEETS[carrier.country];
           return (
@@ -122,7 +122,7 @@ export function BottomBar() {
             <button className="btn btn--xs" onClick={() => st().backToMenu()}>MENU</button>
           </div>
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-1 xl:grid-cols-6">
+        <div className={`mt-2 grid grid-cols-3 gap-1 ${compact ? '' : 'xl:grid-cols-6'}`}>
           {COUNTRY_CODES.map((c) => {
             const f = FLEETS[c];
             const owned = carriers.filter((x) => x.country === c);

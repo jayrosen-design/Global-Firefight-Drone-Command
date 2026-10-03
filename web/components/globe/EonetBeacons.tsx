@@ -6,6 +6,7 @@ import { Group, Mesh } from 'three';
 import type { EonetEvent } from '@/lib/data/types';
 import { latLonToVector3, surfaceFrame } from '@/lib/geo/wgs84';
 import { useGame } from '@/store/gameStore';
+import { isDrag } from '@/lib/geo/clicks';
 import { useGlobeTiles } from '@/lib/tiles/TilesContext';
 import { SurfaceTracker } from '@/lib/tiles/surface';
 
@@ -58,7 +59,7 @@ function Beacon({ ev, index }: { ev: EonetEvent; index: number }) {
         <ringGeometry args={[1, 1.15, 40]} />
         <meshBasicMaterial color="#ff5a1f" transparent toneMapped={false} depthWrite={false} />
       </mesh>
-      <mesh position={[0, 1.2, 0]} onClick={(e) => { e.stopPropagation(); flyTo(ev.latitude, ev.longitude, 1.15); }}>
+      <mesh position={[0, 1.2, 0]} onClick={(e) => { e.stopPropagation(); if (isDrag(e)) return; flyTo(ev.latitude, ev.longitude, 1.15); useGame.getState().openFeed({ lat: ev.latitude, lon: ev.longitude }, { label: ev.title }); }}>
         <cylinderGeometry args={[0.08, 0.08, 2.4, 6]} />
         <meshBasicMaterial color="#ffd79a" toneMapped={false} />
       </mesh>
