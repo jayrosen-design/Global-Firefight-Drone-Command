@@ -7,6 +7,7 @@ import { latLonToVector3, surfaceFrame } from '@/lib/geo/wgs84';
 import type { CarrierVehicle } from '@/lib/engine/CarrierVehicle';
 import { FLEETS } from '@/lib/config/fleets';
 import { useGame } from '@/store/gameStore';
+import { isDrag } from '@/lib/geo/clicks';
 import { CarrierModel } from '@/components/models/CarrierModel';
 import { useGlobeTiles } from '@/lib/tiles/TilesContext';
 import { SurfaceTracker } from '@/lib/tiles/surface';
@@ -40,7 +41,7 @@ function Carrier({ carrier }: { carrier: CarrierVehicle }) {
 
   return (
     <group ref={group}>
-      <group onClick={(e) => { e.stopPropagation(); select({ type: 'carrier', id: carrier.id }); }} onPointerOver={() => (document.body.style.cursor = 'pointer')} onPointerOut={() => (document.body.style.cursor = 'default')}>
+      <group onClick={(e) => { e.stopPropagation(); if (isDrag(e)) return; select({ type: 'carrier', id: carrier.id }); useGame.getState().openFeed(carrier, { carrierId: carrier.id, focus: 'carrier', label: `${fleet.flag} ${fleet.carrier.model}` }); }} onPointerOver={() => (document.body.style.cursor = 'pointer')} onPointerOut={() => (document.body.style.cursor = 'default')}>
         <CarrierModel country={carrier.country} selected={selected} />
       </group>
       <Html ref={label} position={[0, 4.2, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>

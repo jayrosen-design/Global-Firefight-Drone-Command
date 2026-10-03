@@ -252,3 +252,23 @@ select.btn { appearance: none; }
 .feed__pilot:hover { background: rgba(94,242,255,0.25); }
 .hud-label--feed { border-color: var(--cyan); color: #04121a; background: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: 0.16em; padding: 1px 6px; }
 .feed__view .hud-label { transform: scale(0.72); transform-origin: center bottom; }
+
+/* Feed sensor modes + camera toggles */
+.feed__modes { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; z-index: 2; }
+.feed__seg { display: flex; border: 1px solid rgba(94,242,255,0.35); border-radius: 3px; overflow: hidden; background: rgba(4,10,16,0.75); }
+.feed__seg button { font-size: 9px; letter-spacing: 0.12em; padding: 2px 6px; color: rgba(223,251,255,0.8); background: none; border: 0; cursor: pointer; }
+.feed__seg button + button { border-left: 1px solid rgba(94,242,255,0.2); }
+.feed__seg button:hover:not(:disabled) { background: rgba(94,242,255,0.18); }
+.feed__seg button.is-on { background: var(--cyan); color: #04121a; font-weight: 700; }
+.feed__seg button:disabled { opacity: .35; cursor: not-allowed; }
+.feed__view--ir canvas { filter: grayscale(1) contrast(1.25) brightness(1.05); }
+.feed__ir, .feed__lidar { position: absolute; inset: 0; pointer-events: none; }
+.feed__ir { background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.7) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px); }
+.feed__lidar { background: repeating-linear-gradient(0deg, rgba(94,242,255,0.05) 0 1px, transparent 1px 4px), radial-gradient(ellipse at center, transparent 60%, rgba(0,20,30,0.6) 100%); }
+.feed__ir-tag { position: absolute; top: 8px; left: 8px; font-size: 10px; letter-spacing: 0.24em; color: #fff; text-shadow: 0 0 6px rgba(255,255,255,0.6); }
+.feed__ir-tag--lidar { color: #7dffb3; text-shadow: 0 0 6px rgba(125,255,179,0.5); }
+.feed__ir-cross { position: absolute; left: 50%; top: 50%; width: 90px; height: 90px; transform: translate(-50%, -50%); border: 1px solid rgba(255,255,255,0.7); border-radius: 50%; }
+.feed__ir-cross::before, .feed__ir-cross::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(255,255,255,0.85); transform: translate(-50%, -50%); }
+.feed__ir-cross::before { width: 1px; height: 130px; }
+.feed__ir-cross::after { width: 130px; height: 1px; }
+.feed__ir-tgt { position: absolute; left: 50%; top: calc(50% + 54px); transform: translateX(-50%); font-size: 10px; letter-spacing: 0.18em; color: #fff; white-space: nowrap; text-shadow: 0 0 6px rgba(255,255,255,0.6); }

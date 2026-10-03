@@ -14,6 +14,8 @@ Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170
 
 ### Screenshots
 
+![Split view: live globe with a carrier launch feed and an IR drone cam feed](web/docs/screenshots/09-split-view-feeds.png)
+
 | Country select — pitch-deck crew line-up, drone + carrier art, insignia | Global RTS — free play on the live FIRMS globe |
 | --- | --- |
 | ![Country select](web/docs/screenshots/01-campaign-menu.png) | ![Global RTS free play](web/docs/screenshots/02-global-rts-freeplay.png) |
@@ -30,7 +32,7 @@ Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170
 | --- | --- |
 | ![Tactical LIDAR](web/docs/screenshots/07-tactical-lidar.png) | ![Mission debrief](web/docs/screenshots/08-mission-debrief.png) |
 
-| Split view — globe stays live with up to 4 live feeds of clicked points |
+| Split view — the live globe with two feeds: a FIRE INCENDIE carrier launching a Thunder Wasp swarm, and a drone cam in IR white-hot over the Horse River fire |
 | --- |
 | ![Split view](web/docs/screenshots/09-split-view-feeds.png) |
 
@@ -110,6 +112,9 @@ spectator views of the same simulation.
 - Each feed renders that location in 3D (real-world tiles with a Google / ion key, procedural terrain otherwise) with
   its fires, protected structures and carriers, drones flying in on their real great-circle path, orbiting on station
   and dropping suppressant. Drag to orbit, scroll to zoom.
+- Each feed has its own sensor (**STD / IR / LIDAR**) and camera (**AREA** orbit, **DRONE CAM** wingman view of a
+  drone working the fire, **CARRIER** close-up of a truck with its ready drones on the roof and swarms lifting off).
+  Clicking a carrier on the globe opens a carrier feed directly.
 - Window controls: **◎** centres the globe on the feed, **✕** closes it, **PILOT** takes manual control of a drone
   working that area (tactical view), **CLOSE ALL** clears the column. Numbered markers on the globe match the windows.
 - Dragging the globe never opens a feed (clicks that move more than 5 px are treated as orbit drags).

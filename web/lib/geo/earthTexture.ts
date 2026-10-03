@@ -66,9 +66,9 @@ export function buildEarthTexture(width = 4096): CanvasTexture {
   const land = feature(landTopo, landTopo.objects.land) as unknown as FeatureCollection;
   ctx.beginPath();
   for (const f of land.features) traceGeometry(ctx, width, height, f.geometry);
-  ctx.fillStyle = '#0f2735';
+  ctx.fillStyle = '#17405a';
   ctx.fill('evenodd');
-  ctx.strokeStyle = 'rgba(120,220,240,0.42)';
+  ctx.strokeStyle = 'rgba(140,230,250,0.6)';
   ctx.lineWidth = 1.6;
   ctx.stroke();
 

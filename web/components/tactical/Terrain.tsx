@@ -34,7 +34,7 @@ export function Terrain({ geometry, vision }: { geometry: BufferGeometry; vision
   return (
     <mesh geometry={geometry} receiveShadow>
       {vision === 'ir' ? (
-        <meshStandardMaterial color="#2b2b2b" roughness={1} />
+        <meshStandardMaterial color="#4e4e4e" roughness={1} />
       ) : (
         <meshStandardMaterial vertexColors roughness={0.95} metalness={0} side={DoubleSide} />
       )}
@@ -119,7 +119,7 @@ export function Trees({ seed, vision, count = 2200 }: { seed: number; vision: Vi
       frustumCulled={false}
     >
       <coneGeometry args={[1, 1, 6]} />
-      <meshStandardMaterial color={vision === 'ir' ? '#3a3a3a' : '#1f4a22'} roughness={1} />
+      <meshStandardMaterial color={vision === 'ir' ? '#1c1c1c' : '#1f4a22'} roughness={1} />
     </instancedMesh>
   );
 }

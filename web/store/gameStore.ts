@@ -33,7 +33,15 @@ export interface LiveFeed {
   /** Fire the feed was opened on, if any. */
   fireId?: string;
   openedAt: number;
+  /** Sensor mode for this feed's camera. */
+  vision: VisionMode;
+  /** area: orbit the location · carrier: close-up of a carrier deploying drones · drone: chase cam on a drone over its fire. */
+  focus: FeedFocus;
+  carrierId?: string;
+  droneId?: string;
 }
+
+export type FeedFocus = 'area' | 'carrier' | 'drone';
 
 export const MAX_FEEDS = 4;
 /** Clicking within this distance of an open feed re-uses it instead of opening another. */
@@ -77,7 +85,9 @@ interface GameState {
   /** Feed most recently opened or re-focused (briefly highlighted). */
   activeFeedId: string | null;
 
-  openFeed: (ll: LatLon, opts?: { fireId?: string; label?: string }) => void;
+  openFeed: (ll: LatLon, opts?: { fireId?: string; label?: string; carrierId?: string; focus?: FeedFocus; vision?: VisionMode }) => void;
+  setFeedVision: (id: string, vision: VisionMode) => void;
+  setFeedFocus: (id: string, focus: FeedFocus, targetId?: string) => void;
   closeFeed: (id: string) => void;
   closeAllFeeds: () => void;
   setMoveArmed: (v: boolean) => void;
@@ -141,7 +151,12 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     const near = s.feeds.find((f) => haversineKm(f, ll) < FEED_DEDUPE_KM);
     if (near) {
-      set({ activeFeedId: near.id });
+      set((st) => ({
+        activeFeedId: near.id,
+        feeds: opts.focus || opts.carrierId
+          ? st.feeds.map((f) => (f.id === near.id ? { ...f, focus: opts.focus ?? f.focus, carrierId: opts.carrierId ?? f.carrierId } : f))
+          : st.feeds,
+      }));
       return;
     }
     const feed: LiveFeed = {
@@ -151,6 +166,9 @@ export const useGame = create<GameState>((set, get) => ({
       label: opts.label ?? feedLabel(s, ll, opts.fireId),
       fireId: opts.fireId,
       openedAt: s.simTime,
+      vision: opts.vision ?? 'standard',
+      focus: opts.focus ?? (opts.carrierId ? 'carrier' : 'area'),
+      carrierId: opts.carrierId,
     };
     let feeds = [...s.feeds, feed];
     if (feeds.length > MAX_FEEDS) {
@@ -162,6 +180,15 @@ export const useGame = create<GameState>((set, get) => ({
   },
   closeFeed: (id) => set((s) => ({ feeds: s.feeds.filter((f) => f.id !== id), activeFeedId: s.activeFeedId === id ? null : s.activeFeedId })),
   closeAllFeeds: () => set({ feeds: [], activeFeedId: null }),
+  setFeedVision: (id, vision) => set((s) => ({ feeds: s.feeds.map((f) => (f.id === id ? { ...f, vision } : f)) })),
+  setFeedFocus: (id, focus, targetId) =>
+    set((s) => ({
+      feeds: s.feeds.map((f) =>
+        f.id === id
+          ? { ...f, focus, droneId: focus === 'drone' ? targetId ?? f.droneId : f.droneId, carrierId: focus === 'carrier' ? targetId ?? f.carrierId : f.carrierId }
+          : f,
+      ),
+    })),
 
   setMoveArmed: (moveArmed) => set({ moveArmed }),
 
