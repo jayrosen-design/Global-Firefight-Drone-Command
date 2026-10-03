@@ -9,6 +9,14 @@ Dual-mode RTS and third-person tactical firefighting simulation driven by live N
 
 ## Web Prototype (God Eye fork)
 
+**▶ [Watch the 55-second gameplay trailer](web/docs/trailer/global-firefight-trailer.mp4)**
+
+![Gameplay teaser: split-view feeds, IR drone pass, debrief](web/docs/trailer/teaser.gif)
+
+The trailer is a scripted play session of the Fort McMurray campaign, captured frame-by-frame from the running game
+(`web/scripts/trailer/capture.mjs` steps the render loop one frame at a time, so it records smooth 24 fps footage even on
+software rendering).
+
 Dual-mode RTS / third-person tactical firefighting simulation on a live NASA fire globe.
 Built with Next.js 14 (App Router), TypeScript, Tailwind, Zustand, Three.js r170 and React Three Fiber.
 
