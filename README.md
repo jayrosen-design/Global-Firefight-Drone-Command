@@ -194,6 +194,7 @@ flowchart TB
       MENU["ScenarioMenu"]
       THUD["TacticalHUD<br/>reticle · gauges · vision toggle · abilities"]
       DEB["Debrief<br/>itemised ledger · objectives · grade"]
+      FP["FeedPanel · FeedView<br/>≤4 live 3D feeds of clicked globe points<br/>(reuses TacticalWorld + useLocalPlacements)"]
     end
   end
 
@@ -231,6 +232,7 @@ flowchart TB
   GS --> TL
   GS --> HUD
   GB -- "click → openFeed" --> GS
+  GS -- "feeds[]" --> FP
   DCT --> TS --> THUD
   DCT -- "tacticalDrop · rescueCivilian" --> GS
   MD --> CR
