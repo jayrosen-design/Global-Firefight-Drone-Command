@@ -77,7 +77,7 @@ const scenes = [
     enter: async () => {
       await G(() => { const s = window.__game.getState(); const c = s.carriers[0]; const f0 = s.fires[0];
         s.setTimeScale(2); s.select(null);
-        s.openFeed({ lat: c.lat, lon: c.lon }, { carrierId: c.id, focus: 'carrier', label: '🇨🇦 FIRE INCENDIE Carrier — swarm launch' });
+        s.openFeed({ lat: c.lat, lon: c.lon }, { carrierId: c.id, focus: 'carrier', label: 'FIRE INCENDIE Carrier — swarm launch' });
         s.openFeed({ lat: f0.lat, lon: f0.lon }, { fireId: f0.id, vision: 'ir', focus: 'drone' });
         const lead = window.__game.getState().drones.find((d) => d.targetFireId === f0.id && d.swarmIndex === 0);
         const ir = window.__game.getState().feeds[1]; if (lead) window.__game.getState().setFeedFocus(ir.id, 'drone', lead.id);

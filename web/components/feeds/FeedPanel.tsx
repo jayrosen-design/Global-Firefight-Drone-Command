@@ -5,6 +5,7 @@ import { useGame, MAX_FEEDS, type LiveFeed, type VisionMode } from '@/store/game
 import { FLEETS } from '@/lib/config/fleets';
 import { haversineKm } from '@/lib/geo/wgs84';
 import { fmtUSD } from '@/lib/engine/economics';
+import { Flag } from '@/components/hud/Flag';
 
 const FeedView = dynamic(() => import('./FeedView').then((m) => m.FeedView), { ssr: false });
 
@@ -37,6 +38,7 @@ function FeedWindow({ feed, slot }: { feed: LiveFeed; slot: number }) {
   }, [fires, drones, feed]);
 
   const pilot = stats.onStation[0] ?? stats.drones[0];
+  const feedCarrier = feed.carrierId ? carriers.find((c) => c.id === feed.carrierId) : undefined;
   const localCarrier = carriers.find((c) => haversineKm(c, feed) < FEED_RANGE_KM);
   const camDrone = stats.drones.find((d) => d.id === feed.droneId) ?? stats.onStation[0] ?? stats.drones[0];
   const nearestFire = fires.filter((f) => !f.extinguished && haversineKm(f, feed) < FEED_RANGE_KM).sort((a, b) => haversineKm(a, feed) - haversineKm(b, feed))[0];
@@ -45,7 +47,7 @@ function FeedWindow({ feed, slot }: { feed: LiveFeed; slot: number }) {
     <section className={`feed glass ${active ? 'feed--active' : ''}`} aria-label={`Live feed ${slot}: ${feed.label}`}>
       <header className="feed__head">
         <span className="feed__slot">FEED {slot}</span>
-        <span className="feed__title" title={feed.label}>{feed.label}</span>
+        <span className="feed__title" title={feed.label}>{feedCarrier && <Flag code={feedCarrier.country} h={11} />} {feed.label}</span>
         <span className="feed__live">● LIVE</span>
         <button className="feed__btn" onClick={() => flyTo(feed.lat, feed.lon, 1.05)} title="Centre the globe on this feed">◎</button>
         <button className="feed__btn" onClick={() => closeFeed(feed.id)} title="Close feed" aria-label="Close feed">✕</button>
@@ -80,7 +82,7 @@ function FeedWindow({ feed, slot }: { feed: LiveFeed; slot: number }) {
         </div>
         {pilot && (
           <button className="feed__pilot" onClick={() => enterTactical(pilot.id)} title="Take manual control of this drone">
-            {FLEETS[pilot.country].flag} PILOT {pilot.callSign}
+            <Flag code={pilot.country} h={10} /> PILOT {pilot.callSign}
           </button>
         )}
       </div>

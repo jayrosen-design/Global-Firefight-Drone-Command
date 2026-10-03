@@ -2,6 +2,7 @@
 import { useGame, type VisionMode } from '@/store/gameStore';
 import { useTelemetry } from '@/store/telemetryStore';
 import { FLEETS } from '@/lib/config/fleets';
+import { Flag } from './Flag';
 import { MAP_ROUTE, MAP_ROUTE_LABEL } from '@/lib/config/tiles';
 
 const MODES: { id: VisionMode; label: string }[] = [
@@ -37,7 +38,7 @@ export function TacticalHUD() {
       </div>
       {/* Left telemetry */}
       <div className="glass thud__panel thud__panel--left pointer-events-auto">
-        <div className="panel__title">{fleet.flag} {drone.callSign} · {fleet.drone.model}</div>
+        <div className="panel__title"><Flag code={drone.country} /> {drone.callSign} · {fleet.drone.model}</div>
         <div className="panel__sub">{fleet.drone.livery.description}</div>
         <Gauge label="ALTITUDE" value={`${t.altitude.toFixed(0)} m AGL`} pct={Math.min(100, t.altitude / 6)} />
         <Gauge label="AIRSPEED" value={`${t.airspeed.toFixed(0)} km/h`} pct={Math.min(100, (t.airspeed / (fleet.drone.tactical.maxSpeed * 3.6 * 1.8)) * 100)} />

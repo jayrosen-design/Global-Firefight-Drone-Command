@@ -3,6 +3,7 @@ import { useGame } from '@/store/gameStore';
 import { FLEETS, COUNTRY_CODES, fleetUiColor } from '@/lib/config/fleets';
 import { fmtUSD } from '@/lib/engine/economics';
 import { intensity } from '@/lib/engine/fire';
+import { Flag } from './Flag';
 
 export function BottomBar({ compact = false }: { compact?: boolean }) {
   const selection = useGame((s) => s.selection);
@@ -28,7 +29,7 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
           const f = FLEETS[carrier.country];
           return (
             <div>
-              <div className="panel__title">{f.flag} {f.carrier.model}</div>
+              <div className="panel__title"><Flag code={carrier.country} /> {f.carrier.model}</div>
               <div className="panel__sub">{f.carrier.description} · {carrier.label.split(' — ')[1] ?? ''}</div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                 <Kv k="DRONES READY" v={`${carrier.dronesReady}/${f.carrier.droneCapacity}`} />
@@ -70,7 +71,7 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
               {carriers.length > 0 && !fire.extinguished && (
                 <select className="btn" defaultValue="" onChange={(e) => { if (e.target.value) st().dispatch(e.target.value, fire.id); e.target.value = ''; }}>
                   <option value="">DISPATCH FROM…</option>
-                  {carriers.map((c) => (<option key={c.id} value={c.id}>{FLEETS[c.country].flag} {FLEETS[c.country].carrier.model} ({c.dronesReady})</option>))}
+                  {carriers.map((c) => (<option key={c.id} value={c.id}>{c.country} · {FLEETS[c.country].carrier.model} ({c.dronesReady})</option>))}
                 </select>
               )}
             </div>
@@ -81,7 +82,7 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
           const target = fires.find((x) => x.id === drone.targetFireId);
           return (
             <div>
-              <div className="panel__title">{f.flag} {drone.callSign} · {f.drone.model}</div>
+              <div className="panel__title"><Flag code={drone.country} /> {drone.callSign} · {f.drone.model}</div>
               <div className="panel__sub">{drone.state.toUpperCase()} → {target?.label ?? 'target'}</div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                 <Kv k="PROGRESS" v={`${Math.round(drone.t * 100)}%`} />
@@ -134,7 +135,7 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
                 onClick={() => (placing === c ? st().cancelPlacing() : st().beginPlacingCarrier(c))}
                 title={`${f.carrier.model} — click, then click the globe to deploy`}
               >
-                <div className="fleet__flag">{f.flag}</div>
+                <div className="fleet__flag"><Flag code={c} h={16} /></div>
                 <div className="fleet__name">{f.drone.model}</div>
                 <div className="fleet__meta">{f.agency} · {owned.length} deployed</div>
               </button>

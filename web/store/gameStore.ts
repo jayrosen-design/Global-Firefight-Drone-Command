@@ -251,7 +251,7 @@ export const useGame = create<GameState>((set, get) => ({
       log: [],
       cameraRequest: { lat: s.center.lat, lon: s.center.lon, distance: 1.045, nonce: Date.now() },
     });
-    get().pushLog(`${FLEETS[s.country].flag} ${s.title} — ${s.location} (${s.year}). Carrier staged at ${s.carrier.label}.`, 'info');
+    get().pushLog(`[${s.country}] ${s.title} — ${s.location} (${s.year}). Carrier staged at ${s.carrier.label}.`, 'info');
     get().pushLog(`Wind ${s.wind.speedMph} mph ${s.wind.label}. Select the carrier, then click a fire to dispatch.`, 'alert');
   },
 
@@ -293,7 +293,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (!c) return;
     const carrier = createCarrier(c, ll.lat, ll.lon, `${FLEETS[c].carrier.model} — Forward Base`);
     set((s) => ({ carriers: [...s.carriers, carrier], placingCarrier: null, selection: { type: 'carrier', id: carrier.id } }));
-    get().pushLog(`${FLEETS[c].flag} ${FLEETS[c].carrier.model} deployed at ${ll.lat.toFixed(2)}°, ${ll.lon.toFixed(2)}°.`, 'info');
+    get().pushLog(`[${c}] ${FLEETS[c].carrier.model} deployed at ${ll.lat.toFixed(2)}°, ${ll.lon.toFixed(2)}°.`, 'info');
   },
 
   moveCarrier: (carrierId, ll) => {
@@ -333,7 +333,7 @@ export const useGame = create<GameState>((set, get) => ({
       selection: { type: 'drone', id: newDrones[0].id },
     }));
     get().pushLog(
-      `${fleet.flag} ${swarm > 1 ? `${swarm}× ` : ''}${fleet.drone.model} dispatched → ${fire.label ?? 'target'} (${distanceKm.toFixed(0)} km).`,
+      `[${carrier.country}] ${swarm > 1 ? `${swarm}× ` : ''}${fleet.drone.model} dispatched → ${fire.label ?? 'target'} (${distanceKm.toFixed(0)} km).`,
       'dispatch',
     );
     return true;

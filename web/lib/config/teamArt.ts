@@ -6,6 +6,7 @@ import type { CountryCode } from './fleets';
  */
 export const droneArtUrl = (code: CountryCode) => `/teams/${code}/drone.webp`;
 export const carrierArtUrl = (code: CountryCode) => `/teams/${code}/carrier.webp`;
+export const flagUrl = (code: CountryCode) => `/teams/${code}/flag.png`;
 export const insigniaUrl = (code: CountryCode) => `/teams/${code}/insignia.webp`;
 /** index is the crew position (0-based), matching the left-to-right figure order on the team slide. */
 export const portraitUrl = (code: CountryCode, index: number) => `/teams/${code}/crew/${index + 1}.webp`;

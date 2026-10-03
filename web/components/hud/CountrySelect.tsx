@@ -7,6 +7,7 @@ import { fmtUSD } from '@/lib/engine/economics';
 import { useGame } from '@/store/gameStore';
 import { carrierArtUrl, droneArtUrl, insigniaUrl, portraitUrl } from '@/lib/config/teamArt';
 import { TeamImage } from './TeamImage';
+import { Flag } from './Flag';
 
 const ArmoryViewer = dynamic(() => import('./ArmoryViewer').then((m) => m.ArmoryViewer), { ssr: false });
 
@@ -64,7 +65,7 @@ export function CountrySelect() {
       <nav className="cs__rail" aria-label="Nations">
         {COUNTRY_CODES.map((c, i) => (
           <button key={c} className={`cs__flag ${i === index ? 'cs__flag--active' : ''}`} style={{ ['--accent' as string]: fleetUiColor(c) }} onClick={() => { setCrewFocus(null); setIndex(i); }} title={FLEETS[c].country}>
-            <span className="cs__flag-emoji">{FLEETS[c].flag}</span>
+            <Flag code={c} h={26} className="cs__flag-img" />
             <span className="cs__flag-code">{c}</span>
           </button>
         ))}
@@ -76,9 +77,9 @@ export function CountrySelect() {
 
       <section className="cs__stage glass" key={code}>
         <div className="cs__stage-head">
-          <TeamImage src={insigniaUrl(code)} alt={`${f.agency} insignia`} className="cs__insignia" fallback={<div className="cs__bigflag">{f.flag}</div>} />
+          <TeamImage src={insigniaUrl(code)} alt={`${f.agency} insignia`} className="cs__insignia" fallback={<Flag code={code} h={56} />} />
           <div>
-            <div className="cs__country">{f.flag} {f.country}</div>
+            <div className="cs__country"><Flag code={code} h={30} className="cs__country-flag" /> {f.country}</div>
             <div className="cs__agency">{f.agency} · <span className="italic text-white/60">{f.motto}</span></div>
           </div>
           <div className="cs__nav">
