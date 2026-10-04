@@ -95,10 +95,27 @@ export function WorldTiles({ mode, origin, vision = 'standard', errorTarget, onT
     return new XYZTilesOverlay({ url: MAP_ROUTE.imageryUrl, levels: 19 });
   }, []);
 
-  const gltfArgs = useMemo(() => ({ dracoLoader: getDracoLoader(), autoDispose: false }), []);
+  // TilesPlugin only shallow-compares `args`, so every args array must be referentially stable —
+  // an inline [{...}] re-creates (unregisters + disposes) the plugin on every re-render.
+  const pluginArgs = useMemo(
+    () => ({
+      googleAuth: MAP_ROUTE.kind === 'google-direct' ? [{ apiToken: MAP_ROUTE.apiToken, autoRefreshToken: true }] : null,
+      ionAuth: MAP_ROUTE.kind === 'google-ion' ? [{ apiToken: MAP_ROUTE.apiToken, assetId: MAP_ROUTE.assetId, autoRefreshToken: true }] : null,
+      quantizedMesh: [{ solid: false }],
+      overlay: imagery ? [{ overlays: [imagery], resolution: 256 }] : null,
+      gltf: [{ dracoLoader: getDracoLoader(), autoDispose: false }],
+      compression: [{ generateNormals: false, disableMipmaps: false }],
+    }),
+    [imagery],
+  );
+  const originLat = origin?.lat;
+  const originLon = origin?.lon;
   const reorientArgs = useMemo(
-    () => (mode === 'tactical' && origin ? { lat: (origin.lat * Math.PI) / 180, lon: (origin.lon * Math.PI) / 180, height: 0, recenter: true } : null),
-    [mode, origin],
+    () =>
+      mode === 'tactical' && originLat !== undefined && originLon !== undefined
+        ? [{ lat: (originLat * Math.PI) / 180, lon: (originLon * Math.PI) / 180, height: 0, recenter: true }]
+        : null,
+    [mode, originLat, originLon],
   );
 
   if (MAP_ROUTE.kind === 'off') return null;
@@ -122,13 +139,13 @@ export function WorldTiles({ mode, origin, vision = 'standard', errorTarget, onT
       }}
       onDisposeModel={({ scene }) => disposeVisionForTile(scene)}
     >
-      {MAP_ROUTE.kind === 'google-direct' && <TilesPlugin plugin={GoogleCloudAuthPlugin} args={[{ apiToken: MAP_ROUTE.apiToken, autoRefreshToken: true }]} />}
-      {MAP_ROUTE.kind === 'google-ion' && <TilesPlugin plugin={CesiumIonAuthPlugin} args={[{ apiToken: MAP_ROUTE.apiToken, assetId: MAP_ROUTE.assetId, autoRefreshToken: true }]} />}
-      {MAP_ROUTE.kind === 'keyless' && <TilesPlugin plugin={QuantizedMeshPlugin} args={[{ solid: false }]} />}
-      {MAP_ROUTE.kind === 'keyless' && imagery && <TilesPlugin plugin={ImageOverlayPlugin} args={[{ overlays: [imagery], resolution: 256 }]} />}
-      <TilesPlugin plugin={GLTFExtensionsPlugin} args={[gltfArgs]} />
-      <TilesPlugin plugin={TileCompressionPlugin} args={[{ generateNormals: false, disableMipmaps: false }]} />
-      {reorientArgs && <TilesPlugin plugin={ReorientationPlugin} args={[reorientArgs]} />}
+      {pluginArgs.googleAuth && <TilesPlugin plugin={GoogleCloudAuthPlugin} args={pluginArgs.googleAuth} />}
+      {pluginArgs.ionAuth && <TilesPlugin plugin={CesiumIonAuthPlugin} args={pluginArgs.ionAuth} />}
+      {MAP_ROUTE.kind === 'keyless' && <TilesPlugin plugin={QuantizedMeshPlugin} args={pluginArgs.quantizedMesh} />}
+      {pluginArgs.overlay && <TilesPlugin plugin={ImageOverlayPlugin} args={pluginArgs.overlay} />}
+      <TilesPlugin plugin={GLTFExtensionsPlugin} args={pluginArgs.gltf} />
+      <TilesPlugin plugin={TileCompressionPlugin} args={pluginArgs.compression} />
+      {reorientArgs && <TilesPlugin plugin={ReorientationPlugin} args={reorientArgs} />}
       <TilesAttributionOverlay style={ATTRIBUTION_STYLE} />
       {children}
     </TilesRenderer>

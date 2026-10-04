@@ -81,6 +81,9 @@ export function applyVisionToTile(root: Object3D, mode: VisionMode) {
   root.traverse((o) => {
     const mesh = o as Tagged;
     if (!mesh.isMesh || (mesh as unknown as Points).isPoints) return;
+    // Never-swapped tile in standard mode: leave its material alone (plugins such as the
+    // image overlay own and patch it after load).
+    if (mode === 'standard' && !mesh.userData.gfOriginal) return;
     if (!mesh.userData.gfOriginal) mesh.userData.gfOriginal = mesh.material;
     // reset
     mesh.material = mesh.userData.gfOriginal;
