@@ -70,7 +70,10 @@ function Drone({ drone }: { drone: DroneUnit }) {
   return (
     <group ref={group}>
       <group onClick={(e) => { e.stopPropagation(); select({ type: 'drone', id: drone.id }); }} onPointerOver={() => (document.body.style.cursor = 'pointer')} onPointerOut={() => (document.body.style.cursor = 'default')}>
-        <DroneModel country={drone.country} />
+        {/* Basis maps local +Z to -fwd; the model's nose is +Z, so turn it to face the flight path. */}
+        <group rotation={[0, Math.PI, 0]}>
+          <DroneModel country={drone.country} detail="low" />
+        </group>
       </group>
       {selected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
