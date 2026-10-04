@@ -111,6 +111,22 @@ Crew entries in `web/lib/config/fleets.ts` follow the figure order. The deck nam
 placeholders and each role is inferred from the figure's equipment (VR headset → drone pilot, respirator and hose →
 suppression, tablet → comms). The screen offers a **CONCEPT ART / 3D MODEL** toggle for the armory.
 
+### Campaign flow and briefings
+
+Setup is three labelled steps: **① Nation** (flag rail) → **② Campaign** (an always-visible bar of large campaign
+cards along the bottom, each with a **VIEW BRIEFING** button, plus Global Free Play) → **③ Briefing** → deploy.
+`Enter` opens the first campaign's briefing; in the briefing `Enter` begins the mission and `Esc` goes back.
+
+Each briefing pairs an in-game newspaper front page for the historic fire (dated the day after it broke out) with
+the mission brief: the situation, **what history recorded** (the real toll), objectives with the win/lose rules,
+conditions, and your force. Text lives in `web/lib/config/campaignStories.ts`.
+
+- The masthead (*The Fireline Herald*) is fictional and every page is labelled as an in-game recreation; events and
+  figures are summarised from public reports.
+- The front-page photos are halftone illustrations generated in code, not press photography:
+  `web/scripts/press/scenes.js` draws each scene on a canvas and screens it into newsprint dots;
+  `node web/scripts/press/render.mjs` (needs `playwright-core` and Chromium) writes `web/public/campaigns/<id>.png`.
+
 ### Controls
 
 | Global RTS | Tactical drone |
@@ -232,7 +248,7 @@ flowchart TB
       MP["MissionPanel<br/>fires out · property standing · live objectives<br/>NEXT hint · hotkeys"]
       TST["Toasts<br/>FIRE OUT / mission result banners"]
       LOG["MissionLog"]
-      MENU["ScenarioMenu"]
+      MENU["CountrySelect → MissionBriefing<br/>nation · campaign bar · newspaper front page + brief"]
       THUD["TacticalHUD<br/>reticle · gauges · vision toggle · abilities"]
       DEB["Debrief<br/>outcome · itemised ledger · objectives · grade"]
       FP["FeedPanel · FeedView<br/>≤4 live 3D feeds of clicked globe points<br/>(reuses TacticalWorld + useLocalPlacements)"]
@@ -440,7 +456,7 @@ classDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> menu : CommandCenter mounts · loadFeed()
-  menu --> rts : startScenario(id) / startFreePlay()<br/>(CountrySelect — ←/→ or flag rail switches nation)
+  menu --> rts : BEGIN MISSION → startScenario(id) / startFreePlay()<br/>(CountrySelect: nation → campaign card → MissionBriefing)
   rts --> tactical : enterTactical(droneId)  [drone airborne]
   tactical --> rts : exitTactical() · ESC · drone recovered
   rts --> debrief : endMission() · all fires out (victory)<br/>property < 25% or budget spent (defeat)
@@ -623,6 +639,8 @@ lib/data/nasa-eonet.ts    GeoJSON parser (title / geometry / link)
 lib/data/fallback-fires.ts Offline dataset
 lib/config/fleets.ts      Six national fleets: drones, carriers, liveries, abilities, costs
 lib/config/scenarios.ts   Seven pitch-deck campaign presets
+lib/config/campaignStories.ts  Briefing front pages + mission stories per campaign
+scripts/press/            Halftone press-illustration generator for the briefings
 lib/engine/               Fire model, DroneUnit, CarrierVehicle, economics (ledger + FinalScore)
 store/gameStore.ts        Zustand store: simulation tick, dispatch, suppression, scoring
 components/globe/         God Eye globe adapter: Globe, TileBasemap, instanced FireLayer shader,
@@ -630,7 +648,7 @@ components/globe/         God Eye globe adapter: Globe, TileBasemap, instanced F
 components/tactical/      Tactical arena: terrain + LIDAR cloud, flame/smoke particles,
                           structures, civilians, player DroneController
 components/models/        Procedural drone & 6x6 carrier models per livery
-components/hud/           TopBar, BottomBar, MissionLog, CountrySelect + ArmoryViewer, TacticalHUD, Debrief
+components/hud/           TopBar, BottomBar, MissionLog, MissionPanel, Toasts, CountrySelect + ArmoryViewer + MissionBriefing, TacticalHUD, Debrief
 ```
 
 #### Economic model
@@ -658,6 +676,8 @@ source is vendored.
 ### Scripts
 
 `npm run dev` · `npm run build` · `npm run start` · `npm run lint` · `npm run typecheck`
+
+`node scripts/press/render.mjs` regenerates the campaign briefing press illustrations (see *Campaign flow and briefings*).
 
 ---
 

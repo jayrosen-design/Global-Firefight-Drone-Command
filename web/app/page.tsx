@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { COUNTRY_CODES, FLEETS, fleetUiColor } from '@/lib/config/fleets';
 import { SCENARIOS } from '@/lib/config/scenarios';
+import { CAMPAIGN_STORIES, pressPhotoUrl } from '@/lib/config/campaignStories';
 import { droneArtUrl, flagUrl, insigniaUrl } from '@/lib/config/teamArt';
 import { PLAY_PATH, REPO_URL, STEAM_PAGE_LIVE, STEAM_URL } from '@/lib/config/site';
 import './landing.css';
@@ -57,7 +58,8 @@ const CHAPTERS = [
       <>
         <p>Six real-world fire services stand ready. Each brings its own crew, drone airframe, Mobile Command Carrier, liveries, abilities and costs — from the USFS Guardian Mk IV laying Phos-Chek lines to Canada’s FireSwarm Thunder Wasps that fly in synchronized three-drone swarms.</p>
         <ul>
-          <li><b>←/→</b> or the flag rail switches nation; <b>1–6</b> jumps; <b>Enter</b> launches the first campaign.</li>
+          <li><b>←/→</b> or the flag rail switches nation; <b>1–6</b> jumps. Pick a campaign from the bar along the bottom — or press <b>Enter</b> — to open its briefing.</li>
+          <li>Each briefing opens on the fire’s front page and the record it left behind; <b>Begin Mission</b> (or <b>Enter</b>) deploys you.</li>
           <li>Toggle <b>Concept Art / 3D Model</b> to inspect the armory; hover crew to see roles and call signs.</li>
         </ul>
       </>
@@ -287,6 +289,9 @@ export default function LandingPage() {
         <div className="lp-campaigns">
           {SCENARIOS.map((s) => (
             <article key={s.id} className="lp-campaign" style={{ ['--accent' as string]: fleetUiColor(s.country) }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="lp-campaign__photo" src={pressPhotoUrl(s.id)} alt={CAMPAIGN_STORIES[s.id]?.caption ?? ''} loading="lazy" />
+              {CAMPAIGN_STORIES[s.id] && <div className="lp-campaign__headline">{CAMPAIGN_STORIES[s.id].headline}</div>}
               <div className="lp-campaign__top">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={flagUrl(s.country)} alt={FLEETS[s.country].country} className="lp-nation__flag" />

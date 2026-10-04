@@ -89,6 +89,8 @@
 
 .lp-campaigns { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .lp-campaign { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 5px; padding: 14px 16px; background: #050b12; }
+.lp-campaign__photo { display: block; width: calc(100% + 32px); max-width: none; margin: -14px -16px 10px; aspect-ratio: 5 / 3; object-fit: cover; border-radius: 4px 4px 0 0; filter: sepia(0.2); }
+.lp-campaign__headline { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 15px; text-transform: uppercase; margin-bottom: 8px; color: #fff; }
 .lp-campaign__top { display: flex; justify-content: space-between; align-items: center; }
 .lp-campaign__year { font-size: 11px; letter-spacing: 0.2em; color: var(--accent); }
 .lp-campaign h3 { font-size: 16px; margin-top: 8px; }
