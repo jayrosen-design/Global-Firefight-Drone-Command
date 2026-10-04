@@ -7,6 +7,9 @@ import { Vector3 } from 'three';
 import { latLonToVector3 } from '@/lib/geo/wgs84';
 import { useGame } from '@/store/gameStore';
 
+/** Closest the camera may get to the globe centre (globe radii): ~38 km altitude, close enough to tell a fire cluster apart. */
+const MIN_DISTANCE = 1.006;
+
 /** Orbit camera that flies smoothly to scenario centres and selected entities. */
 export function CameraRig() {
   const controls = useRef<OrbitControlsImpl>(null);
@@ -25,7 +28,7 @@ export function CameraRig() {
       const k = 1 - Math.exp(-dt * 3.2);
       camera.position.lerp(t, k);
       // Keep the camera outside the globe during the slerp-ish lerp.
-      const minR = 1.012;
+      const minR = MIN_DISTANCE;
       if (camera.position.length() < minR) camera.position.setLength(minR);
       if (camera.position.distanceTo(t) < 0.002) target.current = null;
     }
@@ -37,5 +40,5 @@ export function CameraRig() {
     }
   });
 
-  return <OrbitControls ref={controls} enablePan={false} minDistance={1.012} maxDistance={5.5} enableDamping dampingFactor={0.08} zoomSpeed={0.6} />;
+  return <OrbitControls ref={controls} enablePan={false} minDistance={MIN_DISTANCE} maxDistance={5.5} enableDamping dampingFactor={0.08} zoomSpeed={0.6} />;
 }

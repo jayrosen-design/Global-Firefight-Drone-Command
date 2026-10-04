@@ -7,6 +7,8 @@ import { buildEarthTexture } from '@/lib/geo/earthTexture';
 import { useGame } from '@/store/gameStore';
 import { TileBasemap } from './TileBasemap';
 import { isDrag } from '@/lib/geo/clicks';
+import { haversineKm } from '@/lib/geo/wgs84';
+import { clickFire } from './FireEntities';
 
 const ATMO_VERT = /* glsl */ `
 varying vec3 vNormal;
@@ -60,6 +62,12 @@ export function Globe({ tilesActive = false }: { tilesActive?: boolean }) {
       st.setMoveArmed(false);
       return;
     }
+    // Near-miss on a burning fire counts as clicking it (fires are small targets in a cluster).
+    const snapKm = (e.camera.position.length() - 1) * 6371 * 0.045;
+    const near = st.fires
+      .filter((f) => !f.extinguished && haversineKm(f, ll) < snapKm)
+      .sort((a, b) => haversineKm(a, ll) - haversineKm(b, ll))[0];
+    if (near) return clickFire(near.id);
     if (st.selection) st.select(null);
     // Any other click on the globe opens a live feed of that point.
     st.openFeed(ll);

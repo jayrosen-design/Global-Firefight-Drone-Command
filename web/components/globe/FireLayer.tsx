@@ -113,8 +113,8 @@ export function FireLayer({ hotspots }: { hotspots: FirmsHotspot[] }) {
     if (isDrag(e)) return;
     const st = useGame.getState();
     const fire = st.engageHotspot(hotspots[e.instanceId]);
-    if (st.selection?.type === 'carrier') st.dispatch(st.selection.id, fire.id);
-    else st.select({ type: 'fire', id: fire.id });
+    const sent = st.dispatchTo(fire.id);
+    if (!sent || st.selection?.type !== 'carrier') st.select({ type: 'fire', id: fire.id });
     st.openFeed({ lat: fire.lat, lon: fire.lon }, { fireId: fire.id });
   };
   const onOver = (e: ThreeEvent<PointerEvent>) => {

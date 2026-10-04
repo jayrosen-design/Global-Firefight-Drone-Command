@@ -6,6 +6,8 @@ import { useTelemetry } from '@/store/telemetryStore';
 import { TopBar } from './hud/TopBar';
 import { BottomBar } from './hud/BottomBar';
 import { MissionLog } from './hud/MissionLog';
+import { MissionPanel } from './hud/MissionPanel';
+import { Toasts } from './hud/Toasts';
 import { CountrySelect } from './hud/CountrySelect';
 import { Debrief } from './hud/Debrief';
 import { TacticalHUD } from './hud/TacticalHUD';
@@ -36,7 +38,9 @@ export function CommandCenter() {
           <GlobeScene />
           {(mode === 'rts' || mode === 'debrief') && (
             <>
+              <MissionPanel />
               <MissionLog />
+              <Toasts />
               <BottomBar compact={split} />
             </>
           )}

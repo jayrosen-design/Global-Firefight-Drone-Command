@@ -34,6 +34,8 @@ export interface Scenario {
   objectives: Objective[];
   fires: ScenarioFire[];
   carrier: { lat: number; lon: number; label: string };
+  /** Extra carriers staged at mission start (fire clusters beyond the main carrier's range). */
+  forwardCarriers?: { lat: number; lon: number; label: string }[];
   wind: { speedMph: number; directionDeg: number; label: string };
   budgetUSD: number;
   /** Property and lives at risk used by the economic model */
@@ -178,6 +180,7 @@ export const SCENARIOS: Scenario[] = [
       { lat: 28.25, lon: 102.95, frp: 520 },
     ],
     carrier: { lat: 29.72, lon: 106.64, label: 'Jiangbei Airfield Staging' },
+    forwardCarriers: [{ lat: 28.12, lon: 102.75, label: 'Liangshan Forward Staging' }],
     wind: { speedMph: 20, directionDeg: 180, label: 'Shifting N/S' },
     budgetUSD: 2_800_000,
     propertyAtRiskUSD: 3_400_000_000,

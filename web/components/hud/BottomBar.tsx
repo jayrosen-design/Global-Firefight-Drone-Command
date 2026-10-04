@@ -3,6 +3,7 @@ import { useGame } from '@/store/gameStore';
 import { FLEETS, COUNTRY_CODES, fleetUiColor } from '@/lib/config/fleets';
 import { fmtUSD } from '@/lib/engine/economics';
 import { intensity } from '@/lib/engine/fire';
+import { haversineKm } from '@/lib/geo/wgs84';
 import { Flag } from './Flag';
 
 export function BottomBar({ compact = false }: { compact?: boolean }) {
@@ -12,8 +13,8 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
   const drones = useGame((s) => s.drones);
   const placing = useGame((s) => s.placingCarrier);
   const moveArmed = useGame((s) => s.moveArmed);
-  const scenario = useGame((s) => s.scenario);
   const showLive = useGame((s) => s.showLiveFeed);
+  const timeScale = useGame((s) => s.timeScale);
   const st = useGame.getState;
 
   const carrier = selection?.type === 'carrier' ? carriers.find((c) => c.id === selection.id) : undefined;
@@ -32,7 +33,10 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
               <div className="panel__title"><Flag code={carrier.country} /> {f.carrier.model}</div>
               <div className="panel__sub">{f.carrier.description} · {carrier.label.split(' — ')[1] ?? ''}</div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                <Kv k="DRONES READY" v={`${carrier.dronesReady}/${f.carrier.droneCapacity}`} />
+                <Kv
+                  k="DRONES READY"
+                  v={`${carrier.dronesReady}/${f.carrier.droneCapacity}${carrier.rearmQueue.length ? ` · +1 in ${Math.ceil(Math.min(...carrier.rearmQueue) / timeScale)}s` : ''}`}
+                />
                 <Kv k="AIRFRAME" v={f.drone.model} />
                 <Kv k="PAYLOAD" v={`${f.drone.payloadLitres} L ${f.drone.suppressant}`} />
                 <Kv k="SORTIE" v={f.drone.swarmSize > 1 ? `SWARM ×${f.drone.swarmSize}` : 'SINGLE'} />
@@ -46,8 +50,16 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
               </div>
               <div className="mt-3 flex gap-2">
                 <button className={`btn ${moveArmed ? 'btn--active' : ''}`} onClick={() => st().setMoveArmed(!moveArmed)}>{moveArmed ? 'CLICK GLOBE TO MOVE…' : 'MOVE'}</button>
-                <button className="btn btn--primary" disabled={carrier.dronesReady <= 0} title="Select a fire on the globe to dispatch" onClick={() => st().pushLog('Dispatch armed — click a fire to launch.', 'alert')}>
-                  DISPATCH → CLICK FIRE
+                <button
+                  className="btn btn--primary"
+                  disabled={carrier.dronesReady <= 0 || !fires.some((x) => !x.extinguished)}
+                  title="Or click any fire on the globe — this carrier launches while it is selected"
+                  onClick={() => {
+                    const near = fires.filter((x) => !x.extinguished).sort((a, b) => haversineKm(a, carrier) - haversineKm(b, carrier))[0];
+                    if (near) st().dispatch(carrier.id, near.id);
+                  }}
+                >
+                  SEND TO NEAREST FIRE
                 </button>
               </div>
             </div>
@@ -60,20 +72,22 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <Kv k="FRP" v={`${fire.frp.toFixed(0)} MW`} />
               <Kv k="INTENSITY" v={`${Math.round(intensity(fire) * 100)}%`} />
-              <Kv k="STATUS" v={fire.extinguished ? 'OUT' : fire.contained ? 'CONTAINED' : 'SPREADING'} />
+              <Kv k="STATUS" v={fire.extinguished ? 'OUT' : fire.contained ? 'CONTAINED' : fire.holdSec > 0 ? 'HELD BY DRONES' : 'SPREADING'} />
               <Kv k="PROPERTY AT RISK" v={fmtUSD(fire.propertyRemainingUSD)} />
               <Kv k="PEOPLE AT RISK" v={Math.round(fire.populationRemaining).toLocaleString()} />
               <Kv k="ON STATION" v={String(drones.filter((d) => d.targetFireId === fire.id && d.state !== 'enroute').length)} />
             </div>
+            {!fire.extinguished && (
+              <div className="meter mt-2" title="Knock-down: how close this fire is to going out">
+                <div className="meter__fill meter__fill--good" style={{ width: `${Math.max(0, Math.min(1, 1 - fire.frp / fire.initialFrp)) * 100}%` }} />
+              </div>
+            )}
             <div className="mt-3 flex gap-2">
-              <button className="btn btn--primary" disabled={fire.extinguished} onClick={() => st().deploySuppressant(fire.id)}>DEPLOY SUPPRESSANT</button>
+              <button className="btn btn--primary" disabled={fire.extinguished} onClick={() => st().dispatchTo(fire.id)} title="Launch from the nearest carrier with drones ready (or click the fire again)">
+                SEND DRONES
+              </button>
+              <button className="btn" disabled={fire.extinguished} onClick={() => st().deploySuppressant(fire.id)}>DROP NOW</button>
               <button className="btn" onClick={() => st().flyTo(fire.lat, fire.lon, 1.05)}>FOCUS</button>
-              {carriers.length > 0 && !fire.extinguished && (
-                <select className="btn" defaultValue="" onChange={(e) => { if (e.target.value) st().dispatch(e.target.value, fire.id); e.target.value = ''; }}>
-                  <option value="">DISPATCH FROM…</option>
-                  {carriers.map((c) => (<option key={c.id} value={c.id}>{c.country} · {FLEETS[c.country].carrier.model} ({c.dronesReady})</option>))}
-                </select>
-              )}
             </div>
           </div>
         )}
@@ -103,13 +117,8 @@ export function BottomBar({ compact = false }: { compact?: boolean }) {
           <div>
             <div className="panel__title">NO UNIT SELECTED</div>
             <div className="panel__sub">
-              {placing ? `Click the globe to deploy the ${FLEETS[placing].carrier.model}.` : 'Select a carrier, then click a fire to dispatch. Click a live hotspot to engage it.'}
+              {placing ? `Click the globe to deploy the ${FLEETS[placing].carrier.model}.` : 'Click any burning fire to send drones from the nearest carrier.'}
             </div>
-            {scenario && (
-              <ul className="mt-2 space-y-1 text-xs">
-                {scenario.objectives.map((o) => (<li key={o.id} className="objective">{o.optional ? '◇' : '◆'} {o.title}</li>))}
-              </ul>
-            )}
           </div>
         )}
       </div>

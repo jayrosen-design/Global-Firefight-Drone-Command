@@ -116,10 +116,25 @@ suppression, tablet → comms). The screen offers a **CONCEPT ART / 3D MODEL** t
 | Global RTS | Tactical drone |
 | --- | --- |
 | Drag to orbit, wheel to zoom | `W/S` throttle, `A/D` yaw, `Q/E` altitude, `SHIFT` boost |
-| Click carrier → click fire = dispatch | `SPACE` drop suppressant (reticle turns gold when the predicted impact is on a fire) |
-| Click a live FIRMS hotspot to engage it | `R` (hold, < 30 m AGL, within 40 m) extract a civilian |
+| Click a fire = send drones (selected carrier if it can reach, else the nearest that can); click again to send more | `SPACE` drop suppressant (reticle turns gold when the predicted impact is on a fire) |
+| Click a live FIRMS hotspot to engage it (`FIRMS LAYER` toggle; hidden by default in campaigns) | `R` (hold, < 30 m AGL, within 40 m) extract a civilian |
 | `MOVE` then click globe relocates a carrier | `V` cycle Standard / IR White-Hot / LIDAR |
 | Fleet panel → click a nation, then the globe, to deploy a forward carrier | `ESC` back to the global view |
+| `SPACE` pause · `1` `2` `3` time speed · `ESC` clear selection | |
+
+#### How a mission plays
+
+- **Goal:** put out every campaign fire. The mission ends by itself: **MISSION ACCOMPLISHED** when the last fire is
+  out, **MISSION FAILED** if less than 25% of the property at risk is still standing or the budget runs out with fires
+  burning. `END MISSION` still ends early.
+- **Mission panel** (top left) tracks fires out, property standing (with the 25% fail line), each objective's live
+  status with a one-line "how", and a **NEXT** hint that says what to do right now.
+- **Any drop holds a fire** from spreading for a while, so keeping drones on it pays off. Retardant (USA, AUS) also
+  contains it for good. A fire counts as out below 8% of its starting size.
+- Drones only launch at fires within range (the round trip must fit the battery). If none can reach, the comms log says
+  why and how far. Chongqing stages a second carrier at Liangshan for its far fire cluster.
+- Balance (`BALANCE` in `web/lib/engine/fire.ts`) was tuned with a headless bot across all seven campaigns: clicking the
+  nearest fire puts the first one out within ~10 s and wins in about 1–5 min; doing nothing loses in about 6 min.
 
 #### Split view: live feeds
 
@@ -172,7 +187,7 @@ flowchart TB
     end
 
     subgraph STATE["State — Zustand"]
-      GS["store/gameStore.ts<br/>mode · feed · scenario · fires[] · carriers[] · drones[]<br/>selection · ledger · simTime · timeScale · visionMode · cameraRequest<br/><b>tick(dt)</b> · dispatch · deploySuppressant · tacticalDrop · rescueCivilian · endMission"]
+      GS["store/gameStore.ts<br/>mode · feed · scenario · fires[] · carriers[] · drones[]<br/>selection · ledger · simTime · timeScale · visionMode · cameraRequest<br/><b>tick(dt)</b> (+ victory / defeat check) · dispatchTo · dispatch · deploySuppressant · tacticalDrop · rescueCivilian · endMission"]
       TS["store/telemetryStore.ts<br/>altitude · airspeed · heading · reticleLocked · nearCivilian<br/>(per-frame, isolated from HUD re-renders)"]
     end
 
@@ -213,11 +228,13 @@ flowchart TB
 
     subgraph HUD["HUD overlay — components/hud (DOM, Tailwind glassmorphism)"]
       TOP["TopBar<br/>net score · property · lives · cost · budget · clock · speed"]
-      BOT["BottomBar<br/>selection panel · MOVE / DEPLOY SUPPRESSANT / DISPATCH<br/>fleet deployment · TACTICAL DRONE VIEW"]
+      BOT["BottomBar<br/>selection panel · MOVE / SEND DRONES / DROP NOW<br/>fleet deployment · TACTICAL DRONE VIEW"]
+      MP["MissionPanel<br/>fires out · property standing · live objectives<br/>NEXT hint · hotkeys"]
+      TST["Toasts<br/>FIRE OUT / mission result banners"]
       LOG["MissionLog"]
       MENU["ScenarioMenu"]
       THUD["TacticalHUD<br/>reticle · gauges · vision toggle · abilities"]
-      DEB["Debrief<br/>itemised ledger · objectives · grade"]
+      DEB["Debrief<br/>outcome · itemised ledger · objectives · grade"]
       FP["FeedPanel · FeedView<br/>≤4 live 3D feeds of clicked globe points<br/>(reuses TacticalWorld + useLocalPlacements)"]
     end
   end
@@ -393,7 +410,9 @@ classDiagram
     +number simTime
     +number timeScale
     +VisionMode visionMode
+    +MissionOutcome outcome
     +tick(dt)
+    +dispatchTo(fireId)
     +dispatch(carrierId, fireId)
     +tacticalDrop(fireId, litres)
     +endMission()
@@ -424,7 +443,7 @@ stateDiagram-v2
   menu --> rts : startScenario(id) / startFreePlay()<br/>(CountrySelect — ←/→ or flag rail switches nation)
   rts --> tactical : enterTactical(droneId)  [drone airborne]
   tactical --> rts : exitTactical() · ESC · drone recovered
-  rts --> debrief : endMission()
+  rts --> debrief : endMission() · all fires out (victory)<br/>property < 25% or budget spent (defeat)
   debrief --> rts : REPLAY
   debrief --> menu : CAMPAIGN SELECT
   rts --> menu : MENU
@@ -435,9 +454,9 @@ stateDiagram-v2
     carrierSelected --> idle : click empty globe
     carrierSelected --> moveArmed : MOVE
     moveArmed --> idle : click globe → moveCarrier()
-    carrierSelected --> droneSelected : click fire → dispatch()
-    idle --> fireSelected : click fire / hotspot (engageHotspot)
-    fireSelected --> droneSelected : DISPATCH FROM…
+    carrierSelected --> carrierSelected : click fire → dispatchTo() (this carrier first)
+    idle --> fireSelected : click fire / hotspot → dispatchTo() (nearest carrier in range)
+    fireSelected --> fireSelected : click again / SEND DRONES → dispatchTo()
     idle --> placingCarrier : fleet panel click
     placingCarrier --> carrierSelected : click globe → placeCarrierAt()
   }
@@ -461,7 +480,7 @@ stateDiagram-v2
   onstation --> returning : fire extinguished
   suppressing --> returning : payload = 0 · battery < 20 %
   returning --> landed : t ≤ 0 (back at carrier)
-  landed --> [*] : removed · carrier.rearmQueue.push(rearmSeconds)
+  landed --> [*] : removed · carrier.rearmQueue.push(rearmSeconds × 20)
 
   note right of enroute
     every tick: flightTimeSec += dt
@@ -505,11 +524,10 @@ sequenceDiagram
   GS->>GS: createScenarioFires · createCarrier · cameraRequest
   GS-->>SC: fires[], carriers[] · CameraRig lerps to centre
 
-  U->>SC: click carrier
-  SC->>GS: select({carrier})
   U->>SC: click fire
-  SC->>GS: dispatch(carrierId, fireId)
-  GS->>GS: haversineKm · createDrone × swarmSize · ledger.deploymentCost
+  SC->>GS: dispatchTo(fireId)
+  GS->>GS: pick selected / nearest carrier in range · dispatch(carrierId, fireId)
+  GS->>GS: range + budget check · createDrone × swarmSize · ledger.deploymentCost
   loop every frame (useFrame → tick(dt × timeScale))
     GS->>GS: stepFire · stepCarrier · advance drones · costs
     SC->>TM: build(id, origin, destination)

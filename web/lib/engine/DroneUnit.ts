@@ -1,4 +1,5 @@
 import { FLEETS, type CountryCode } from '@/lib/config/fleets';
+import { BALANCE } from '@/lib/engine/fire';
 import type { LatLon } from '@/lib/geo/wgs84';
 
 export type DroneState = 'enroute' | 'onstation' | 'suppressing' | 'returning' | 'landed';
@@ -73,7 +74,13 @@ export function createDrone(
 /** Fraction of the trajectory covered per simulated second at cruise speed. */
 export function progressRate(d: DroneUnit) {
   const kmh = FLEETS[d.country].drone.cruiseKmh;
-  return kmh / 3600 / Math.max(1, d.distanceKm);
+  return (kmh * BALANCE.droneSpeed) / 3600 / Math.max(1, d.distanceKm);
+}
+
+/** Furthest fire a drone can reach and still fly home with a 20% battery reserve (km). */
+export function droneRangeKm(country: CountryCode) {
+  const spec = FLEETS[country].drone;
+  return ((spec.cruiseKmh * BALANCE.droneSpeed * spec.enduranceMin) / 60) * 0.8 / 2;
 }
 
 export function batteryDrainPerSec(d: DroneUnit) {

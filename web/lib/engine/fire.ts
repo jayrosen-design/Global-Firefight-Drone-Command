@@ -20,6 +20,8 @@ export interface Fire {
   extinguished: boolean;
   /** Retardant line laid (halts growth). */
   contained: boolean;
+  /** Sim seconds of knock-down left: a fire stops spreading while drones keep working it. */
+  holdSec: number;
   /** Seconds burning (sim time). */
   burnTime: number;
   /** Whether this fire came from a scenario preset (vs promoted live hotspot). */
@@ -47,6 +49,7 @@ export function createScenarioFires(s: Scenario): Fire[] {
       populationInitial: Math.round(s.populationAtRisk * share),
       extinguished: false,
       contained: false,
+      holdSec: 0,
       burnTime: 0,
       source: 'scenario',
     };
@@ -71,22 +74,45 @@ export function fireFromHotspot(h: FirmsHotspot): Fire {
     populationInitial: population,
     extinguished: false,
     contained: false,
+    holdSec: 0,
     burnTime: 0,
     source: 'live',
   };
 }
 
+/**
+ * Game-balance tuning, checked with a headless bot across all seven campaigns: clicking the
+ * nearest fire puts the first one out within seconds and wins in ~1–5 min; doing nothing loses
+ * ~20% of property per minute at 1×.
+ */
+export const BALANCE = {
+  /** Fire growth per sim second (scaled by wind: ×0.5 calm … ×1.5 at 40 mph). */
+  growthRate: 0.0002,
+  /** Fires stop growing at this multiple of their starting FRP. */
+  growthCap: 2,
+  /** Sim seconds a fire stops spreading after any drop — keep drones on it. Retardant contains it for good. */
+  holdSec: 600,
+  /** Property lost per sim second, scaled by intensity. */
+  burnRate: 0.00005,
+  /** Carrier rearm time = fleet rearmSeconds × this (sim seconds). */
+  rearmSimScale: 20,
+  /** A fire knocked below this fraction of its starting FRP is out. */
+  outFrac: 0.08,
+  /** Globe-scale flight speed multiplier on drone cruise speed. */
+  droneSpeed: 2,
+} as const;
+
 /** Fire growth and damage per simulated second. */
 export function stepFire(f: Fire, dtSim: number, windMph: number) {
   if (f.extinguished) return;
   f.burnTime += dtSim;
-  if (!f.contained) {
-    // Growth: up to +0.06%/s scaled by wind; caps at 3x initial FRP.
+  f.holdSec = Math.max(0, f.holdSec - dtSim);
+  if (!f.contained && f.holdSec <= 0) {
     const windFactor = 0.5 + windMph / 40;
-    f.frp = Math.min(f.initialFrp * 3, f.frp * (1 + 0.0006 * windFactor * dtSim));
+    f.frp = Math.min(f.initialFrp * BALANCE.growthCap, f.frp * (1 + BALANCE.growthRate * windFactor * dtSim));
   }
   // Damage: property burns at a rate proportional to intensity.
-  const burnRate = 0.00008 * (0.4 + intensity(f)); // fraction per second (~1–2 h to total loss)
+  const burnRate = BALANCE.burnRate * (0.4 + intensity(f)); // fraction per sim second (~3 sim-hours to total loss)
   const loss = f.propertyRemainingUSD * burnRate * dtSim;
   f.propertyRemainingUSD = Math.max(0, f.propertyRemainingUSD - loss);
   f.populationRemaining = Math.max(0, f.populationRemaining - f.populationInitial * burnRate * 0.5 * dtSim);
@@ -101,8 +127,9 @@ export function applyDrop(f: Fire, litres: number, effectiveness: number, retard
   const knock = litres * 0.6 * effectiveness;
   const before = f.frp;
   f.frp = Math.max(0, f.frp - knock);
+  f.holdSec = BALANCE.holdSec;
   if (retardantLine) f.contained = true;
-  if (f.frp <= Math.max(0.5, f.initialFrp * 0.02)) {
+  if (f.frp <= Math.max(0.5, f.initialFrp * BALANCE.outFrac)) {
     f.frp = 0;
     f.extinguished = true;
   }

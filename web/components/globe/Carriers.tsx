@@ -33,7 +33,7 @@ function Carrier({ carrier }: { carrier: CarrierVehicle }) {
     g.quaternion.setFromRotationMatrix(mat);
     // Constant-ish screen size: scale with camera distance to the globe.
     const d = camera.position.length() - 1;
-    g.scale.setScalar(Math.max(0.0004, Math.min(0.02, d * 0.009)));
+    g.scale.setScalar(Math.max(0.00006, Math.min(0.02, d * 0.009)));
     camDir.copy(camera.position).normalize();
     const facing = camDir.dot(up);
     g.visible = facing > -0.05;

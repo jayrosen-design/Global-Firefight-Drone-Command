@@ -1,5 +1,6 @@
 'use client';
 import { useGame } from '@/store/gameStore';
+import { objectiveDone } from '@/lib/engine/objectives';
 import { finalScore, fmtUSD, livesSavedBonus, totalSuppressionCost, VALUE_OF_STATISTICAL_LIFE_USD, POPULATION_PROTECTED_USD } from '@/lib/engine/economics';
 
 export function Debrief() {
@@ -7,6 +8,7 @@ export function Debrief() {
   const scenario = useGame((s) => s.scenario);
   const fires = useGame((s) => s.fires);
   const simTime = useGame((s) => s.simTime);
+  const outcome = useGame((s) => s.outcome);
   const backToMenu = useGame((s) => s.backToMenu);
   const startScenario = useGame((s) => s.startScenario);
   const startFreePlay = useGame((s) => s.startFreePlay);
@@ -20,6 +22,12 @@ export function Debrief() {
   return (
     <div className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-black/75 p-6">
       <div className="glass w-full max-w-4xl px-8 py-7">
+        {scenario && (
+          <div className={`outcome outcome--${outcome?.result ?? 'ended'}`}>
+            {outcome ? (outcome.result === 'victory' ? 'MISSION ACCOMPLISHED' : 'MISSION FAILED') : 'MISSION ENDED'}
+            <span className="outcome__reason">{outcome?.reason ?? `Ended early with ${fires.length - out} fire${fires.length - out === 1 ? '' : 's'} still burning.`}</span>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-6">
           <div>
             <div className="brand__sub">MISSION DEBRIEF · ECONOMIC IMPACT ANALYSIS</div>
@@ -51,11 +59,7 @@ export function Debrief() {
             <div className="panel__title">OBJECTIVES</div>
             <ul className="mt-2 space-y-2 text-sm">
               {(scenario?.objectives ?? []).map((o) => {
-                let done = false;
-                if (o.civilians) done = ledger.civiliansRescued >= o.civilians;
-                else if (o.line) done = fires.some((f) => f.contained || f.extinguished);
-                else if (o.protect) done = out >= Math.ceil(fires.length / 2);
-                else done = out > 0;
+                const done = objectiveDone(o, fires, ledger);
                 return (
                   <li key={o.id} className={`objective ${done ? 'objective--done' : 'objective--fail'}`}>
                     {done ? '✔' : '✖'} {o.title} {o.optional && <span className="text-white/40">(optional)</span>}
@@ -65,7 +69,7 @@ export function Debrief() {
               {!scenario && <li className="objective">Free play — no scripted objectives.</li>}
             </ul>
             <div className="mt-6 flex gap-2">
-              <button className="btn btn--primary" onClick={() => (scenario ? startScenario(scenario.id) : startFreePlay())}>REPLAY</button>
+              <button className="btn btn--primary" onClick={() => (scenario ? startScenario(scenario.id) : startFreePlay())}>{outcome?.result === 'defeat' ? 'TRY AGAIN' : 'REPLAY'}</button>
               <button className="btn" onClick={backToMenu}>CAMPAIGN SELECT</button>
             </div>
           </div>

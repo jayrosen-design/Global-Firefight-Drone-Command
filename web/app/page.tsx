@@ -85,7 +85,7 @@ const CHAPTERS = [
     clipLabel: 'A US carrier deployed at Calgary sends a drone on a long great-circle arc to Fort McMurray',
     body: (
       <>
-        <p>Select a carrier, then click a fire: drones launch along great-circle arcs with real flight times, orbit on arrival and make coordinated drops until the fire is out — then return to rearm. Deploy forward carriers anywhere from the fleet panel, or order a carrier to <b>MOVE</b>.</p>
+        <p>Click a fire: drones launch from the nearest carrier that can reach it, fly great-circle arcs with real flight times, orbit on arrival and make coordinated drops — then return to rearm. Click again to send more until it&rsquo;s out; every drop holds the fire from spreading. Deploy forward carriers anywhere from the fleet panel, or order a carrier to <b>MOVE</b>.</p>
         <ul>
           <li>Short hops are fast; intercontinental ferries cost flight time and battery.</li>
           <li>Retardant contains a fire’s spread; foam and water knock down its intensity.</li>
@@ -129,7 +129,7 @@ const CHAPTERS = [
     clipLabel: 'Mission debrief — itemised economic ledger, objectives and grade',
     body: (
       <>
-        <p>Every mission is scored on real economics:</p>
+        <p>Put out every fire to win. Lose if less than a quarter of the town is left standing, or the budget runs dry with fires still burning. Every mission is scored on real economics:</p>
         <p className="lp-formula">Final Score = (Property Value Saved + Lives Saved Bonus) − Total Suppression Cost</p>
         <p>Property is credited for what is still standing when a fire goes out; deployment, flight time and every litre of payload cost money. Hit the campaign objectives and spend wisely for an <b>S</b> grade.</p>
       </>
@@ -139,7 +139,8 @@ const CHAPTERS = [
 
 const CONTROLS: [string, string, string][] = [
   ['Globe', 'Drag · Scroll', 'Orbit · zoom the globe'],
-  ['Globe', 'Click carrier → click fire', 'Dispatch a sortie (swarm for CAN / CHN)'],
+  ['Globe', 'Click a fire', 'Send drones (swarm for CAN / CHN) · click again for more'],
+  ['Globe', 'Space · 1 2 3', 'Pause · time speed'],
   ['Globe', 'Click anywhere', 'Open a live feed (max 4)'],
   ['Globe', 'MOVE, then click', 'Relocate the selected carrier'],
   ['Globe', 'Fleet panel → click globe', 'Deploy a forward carrier'],
